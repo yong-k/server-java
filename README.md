@@ -15,4 +15,4 @@ docker-compose up -d
 # 🎸 콘서트 예약 서비스
 ## 문서
 1. [요구사항 정의서](https://github.com/yong-k/server-java/wiki/%EC%9A%94%EA%B5%AC%EC%82%AC%ED%95%AD-%EC%A0%95%EC%9D%98%EC%84%9C)
-2. 
+2. [ERD](https://github.com/yong-k/server-java/wiki/ERD)
