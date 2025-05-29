@@ -18,5 +18,5 @@ docker-compose up -d
 2. [시퀀스 다이어그램](https://github.com/yong-k/server-java/wiki/%EC%8B%9C%ED%80%80%EC%8A%A4-%EB%8B%A4%EC%9D%B4%EC%96%B4%EA%B7%B8%EB%9E%A8)
 3. 
 4. [ERD](https://github.com/yong-k/server-java/wiki/ERD)
-5. 
+5. [상태 다이어그램](https://github.com/yong-k/server-java/wiki/%EC%83%81%ED%83%9C-%EB%8B%A4%EC%9D%B4%EC%96%B4%EA%B7%B8%EB%9E%A8)
 6. [인프라 구성도](https://github.com/yong-k/server-java/wiki/%EC%9D%B8%ED%94%84%EB%9D%BC-%EA%B5%AC%EC%84%B1%EB%8F%84)
