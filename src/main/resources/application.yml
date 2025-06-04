@@ -29,6 +29,9 @@ spring:
     url: jdbc:mysql://localhost:3307/hhplus?characterEncoding=UTF-8&serverTimezone=UTC
     username: application
     password: application
+  sql:
+    init:
+      mode: always
 
 server:
   port: 8081
