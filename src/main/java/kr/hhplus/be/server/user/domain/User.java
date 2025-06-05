@@ -35,8 +35,8 @@ public class User {
     }
 
     public void validateAndCharge(int amount) {
-        if (amount < 0)
-            throw new PointPolicyViolationException("충전 금액은 0보다 커야합니다: " + amount);
+        if (amount <= 0)
+            throw new PointPolicyViolationException("충전 금액은 0보다 커야합니다: 요청금액[" + amount + "]");
 
         // 1회 최대 충전 금액 체크
         if (amount > MAX_CHARGE)
@@ -52,7 +52,7 @@ public class User {
 
     public void validateAndUse(int amount) {
         if (amount <= 0)
-            throw new PointPolicyViolationException("사용 금액은 0보다 커야합니다: " + amount);
+            throw new PointPolicyViolationException("사용 금액은 0보다 커야합니다: 요청금액[" + amount + "]");
 
         // 보유포인트 < 사용포인트 체크
         if (point < amount)

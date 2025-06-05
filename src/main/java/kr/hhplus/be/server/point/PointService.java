@@ -22,14 +22,14 @@ public class PointService {
     private final PointRepository pointRepository;
     private final UserRepository userRepository;
 
-    public List<PointHistoryRespDto> findByUserId(UUID userId) {
+    public List<PointHistoryRespDto> getPointHistories(UUID userId) {
         return pointRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
                 .map(PointHistoryRespDto::from)
                 .collect(Collectors.toList());
     }
 
     @Transactional
-    public PointRespDto charge(UUID userId, int amount) {
+    public PointRespDto chargePoint(UUID userId, int amount) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new DataNotFoundException("사용자가 존재하지 않습니다: userId = " + userId));
 
@@ -46,7 +46,7 @@ public class PointService {
     }
 
     @Transactional
-    public PointRespDto use(UUID userId, int amount) {
+    public PointRespDto usePoint(UUID userId, int amount) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new DataNotFoundException("사용자가 존재하지 않습니다: userId = " + userId));
 
