@@ -28,6 +28,7 @@ public class ApiControllerAdvice extends ResponseEntityExceptionHandler {
     public ResponseEntity<ErrorResponse> handleException(Exception e) {
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ErrorResponse("INTERNAL_SERVER_ERROR", "에러가 발생했습니다."));
+//                .body(new ErrorResponse("INTERNAL_SERVER_ERROR", "에러가 발생했습니다."));
+                .body(new ErrorResponse("INTERNAL_SERVER_ERROR", e.getLocalizedMessage()));
     }
 }

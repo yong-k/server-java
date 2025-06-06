@@ -61,7 +61,7 @@ class PointServiceTest {
         when(pointRepository.findByUserIdOrderByCreatedAtDesc(userId)).thenReturn(expected);
 
         // when
-        List<PointHistoryRespDto> actual = pointService.findByUserId(userId);
+        List<PointHistoryRespDto> actual = pointService.getPointHistories(userId);
 
         // then
         assertThat(actual).hasSize(2);
@@ -88,7 +88,7 @@ class PointServiceTest {
         when(pointRepository.save(any())).thenReturn(history);
 
         // when
-        PointRespDto actual = pointService.charge(userId, amount);
+        PointRespDto actual = pointService.chargePoint(userId, amount);
 
         // then
         assertThat(actual.getAmount()).isEqualTo(10000);
@@ -106,7 +106,7 @@ class PointServiceTest {
 
         // when
         // then
-        assertThatThrownBy(() -> pointService.charge(userId, amount))
+        assertThatThrownBy(() -> pointService.chargePoint(userId, amount))
                 .isInstanceOf(PointPolicyViolationException.class);
     }
 
@@ -120,7 +120,7 @@ class PointServiceTest {
 
         // when
         // then
-        assertThatThrownBy(() -> pointService.charge(userId, amount))
+        assertThatThrownBy(() -> pointService.chargePoint(userId, amount))
                 .isInstanceOf(PointPolicyViolationException.class);
     }
 
@@ -143,7 +143,7 @@ class PointServiceTest {
         when(pointRepository.save(any())).thenReturn(history);
 
         // when
-        PointRespDto actual = pointService.use(userId, amount);
+        PointRespDto actual = pointService.usePoint(userId, amount);
 
         // then
         assertThat(actual.getAmount()).isEqualTo(10000);
@@ -161,7 +161,7 @@ class PointServiceTest {
 
         // when
         // then
-        assertThatThrownBy(() -> pointService.use(userId, amount))
+        assertThatThrownBy(() -> pointService.usePoint(userId, amount))
                 .isInstanceOf(PointPolicyViolationException.class);
     }
 
@@ -175,7 +175,7 @@ class PointServiceTest {
 
         // when
         // then
-        assertThatThrownBy(() -> pointService.use(userId, amount))
+        assertThatThrownBy(() -> pointService.usePoint(userId, amount))
                 .isInstanceOf(PointPolicyViolationException.class);
     }
 }
