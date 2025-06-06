@@ -51,6 +51,7 @@ public class PointService {
                 .orElseThrow(() -> new DataNotFoundException("사용자가 존재하지 않습니다: userId = " + userId));
 
         user.validateAndUse(amount);
+        userRepository.save(user);
 
         PointHistory pointHistory = pointRepository.save(PointHistory.builder()
                 .userId(userId)
