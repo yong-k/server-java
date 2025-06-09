@@ -3,6 +3,7 @@ package kr.hhplus.be.server.point;
 import kr.hhplus.be.server.common.exception.DataNotFoundException;
 import kr.hhplus.be.server.point.domain.PointHistory;
 import kr.hhplus.be.server.point.domain.TransactionType;
+import kr.hhplus.be.server.point.domain.UserPoint;
 import kr.hhplus.be.server.point.dto.PointHistoryRespDto;
 import kr.hhplus.be.server.point.dto.PointRespDto;
 import kr.hhplus.be.server.user.UserRepository;
@@ -33,7 +34,8 @@ public class PointService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new DataNotFoundException("사용자가 존재하지 않습니다: userId = " + userId));
 
-        user.validateAndCharge(amount);
+        UserPoint userPoint = user.toUserPoint();
+        user.updatePoint(userPoint.charge(amount));
 
         PointHistory pointHistory = pointRepository.save(PointHistory.builder()
                 .userId(userId)
@@ -50,8 +52,8 @@ public class PointService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new DataNotFoundException("사용자가 존재하지 않습니다: userId = " + userId));
 
-        user.validateAndUse(amount);
-        userRepository.save(user);
+        UserPoint userPoint = user.toUserPoint();
+        user.updatePoint(userPoint.use(amount));
 
         PointHistory pointHistory = pointRepository.save(PointHistory.builder()
                 .userId(userId)
