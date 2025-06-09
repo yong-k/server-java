@@ -1,8 +1,8 @@
 package kr.hhplus.be.server.common.exception;
 
 import kr.hhplus.be.server.point.exception.PointPolicyViolationException;
-import kr.hhplus.be.server.reservation.exception.SeatPaymentException;
-import kr.hhplus.be.server.reservation.exception.SeatReservationException;
+import kr.hhplus.be.server.reservation.exception.InvalidSeatStatusException;
+import kr.hhplus.be.server.reservation.exception.InvalidSeatUserStatusException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -26,18 +26,18 @@ public class ApiControllerAdvice extends ResponseEntityExceptionHandler {
                 .body(new ErrorResponse("DATA_NOT_FOUND", e.getLocalizedMessage()));
     }
 
-    @ExceptionHandler(SeatReservationException.class)
-    public ResponseEntity<ErrorResponse> handleSeatReservationException(SeatReservationException e) {
+    @ExceptionHandler(InvalidSeatStatusException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidSeatStatusException(InvalidSeatStatusException e) {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(new ErrorResponse("SEAT_RESERVATION_ERROR", e.getLocalizedMessage()));
+                .body(new ErrorResponse("INVALID_SEAT_STATUS", e.getLocalizedMessage()));
     }
 
-    @ExceptionHandler(SeatPaymentException.class)
-    public ResponseEntity<ErrorResponse> handleSeatPaymentException(SeatPaymentException e) {
+    @ExceptionHandler(InvalidSeatUserStatusException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidSeatUserStatusException(InvalidSeatUserStatusException e) {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(new ErrorResponse("SEAT_PAYMENT_ERROR", e.getLocalizedMessage()));
+                .body(new ErrorResponse("INVALID_SEAT_USER_STATUS", e.getLocalizedMessage()));
     }
 
     @ExceptionHandler(Exception.class)

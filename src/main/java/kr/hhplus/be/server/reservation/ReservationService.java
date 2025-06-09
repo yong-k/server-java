@@ -4,7 +4,6 @@ import kr.hhplus.be.server.common.exception.DataNotFoundException;
 import kr.hhplus.be.server.concert.domain.Concert;
 import kr.hhplus.be.server.concert.domain.ConcertSchedule;
 import kr.hhplus.be.server.concert.domain.Seat;
-import kr.hhplus.be.server.concert.domain.SeatStatus;
 import kr.hhplus.be.server.concert.repository.SeatRepository;
 import kr.hhplus.be.server.point.PointService;
 import kr.hhplus.be.server.reservation.domain.PayHistory;
@@ -14,8 +13,8 @@ import kr.hhplus.be.server.reservation.dto.PaymentReqDto;
 import kr.hhplus.be.server.reservation.dto.PaymentRespDto;
 import kr.hhplus.be.server.reservation.dto.SeatReservationReqDto;
 import kr.hhplus.be.server.reservation.dto.SeatReservationRespDto;
-import kr.hhplus.be.server.reservation.exception.SeatPaymentException;
-import kr.hhplus.be.server.reservation.exception.SeatReservationException;
+import kr.hhplus.be.server.reservation.exception.InvalidSeatStatusException;
+import kr.hhplus.be.server.reservation.exception.InvalidSeatUserStatusException;
 import kr.hhplus.be.server.user.UserRepository;
 import kr.hhplus.be.server.user.domain.User;
 import lombok.RequiredArgsConstructor;
@@ -40,10 +39,9 @@ public class ReservationService {
         UUID userId = dto.getUserId();
 
         Seat seat = seatRepository.findById(seatId)
-                .orElseThrow(() -> new SeatReservationException("좌석이 존재하지 않습니다: seatId = " + seatId));
+                .orElseThrow(() -> new DataNotFoundException("좌석이 존재하지 않습니다: seatId = " + seatId));
 
-        if (!seat.getStatus().equals(SeatStatus.AVAILABLE))
-            throw new SeatReservationException("예약불가 좌석입니다: [seatId = " + seat.getId() + ", status = + " + seat.getStatus() + "]");
+        seat.validateReservable();
 
         // 해당 사용자에게 좌석 임시배정
         seat.reserve(userId);
@@ -62,17 +60,16 @@ public class ReservationService {
         UUID userId = dto.getUserId();
 
         Seat seat = seatRepository.findById(seatId)
-                .orElseThrow(() -> new SeatReservationException("좌석이 존재하지 않습니다: seatId = " + seatId));
+                .orElseThrow(() -> new DataNotFoundException("좌석이 존재하지 않습니다: seatId = " + seatId));
 
-        if (!seat.getStatus().equals(SeatStatus.TEMP_RESERVED)) {
+        try {
+            seat.validatePayable(userId);
+        } catch(InvalidSeatStatusException e) {
             savePayHistory(seat, userId, PaymentStatus.FAILED, PaymentReason.INVALID_SEAT_STATUS);
-            throw new SeatPaymentException("결제불가 좌석입니다: [seatId = " + seat.getId() + ", status = " + seat.getStatus() + "]");
-        }
-
-        if (!seat.getUserId().equals(userId)) {
+            throw e;
+        } catch(InvalidSeatUserStatusException e) {
             savePayHistory(seat, userId, PaymentStatus.FAILED, PaymentReason.INVALID_USER);
-            throw new SeatPaymentException("(결제불가)해당 사용자에게 배정된 좌석이 아닙니다: [seatId = " + seat.getId()
-                    + "배정된userId = + " + seat.getStatus() + "현재userId = " + userId + "]");
+            throw e;
         }
 
         // 포인트 사용 (조회, 차감, 포인트내역 저장)

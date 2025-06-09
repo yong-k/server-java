@@ -3,7 +3,6 @@ package kr.hhplus.be.server.user.domain;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import kr.hhplus.be.server.point.domain.UserPoint;
-import kr.hhplus.be.server.point.exception.PointPolicyViolationException;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,8 +10,6 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import static kr.hhplus.be.server.point.domain.PointPolicy.MAX_CHARGE;
-import static kr.hhplus.be.server.point.domain.PointPolicy.MAX_POINT;
 
 @Entity
 @Getter
