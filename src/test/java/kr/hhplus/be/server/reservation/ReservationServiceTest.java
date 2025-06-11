@@ -10,8 +10,8 @@ import kr.hhplus.be.server.reservation.dto.PaymentReqDto;
 import kr.hhplus.be.server.reservation.dto.PaymentRespDto;
 import kr.hhplus.be.server.reservation.dto.SeatReservationReqDto;
 import kr.hhplus.be.server.reservation.dto.SeatReservationRespDto;
-import kr.hhplus.be.server.reservation.exception.SeatPaymentException;
-import kr.hhplus.be.server.reservation.exception.SeatReservationException;
+import kr.hhplus.be.server.reservation.exception.InvalidSeatStatusException;
+import kr.hhplus.be.server.reservation.exception.InvalidSeatUserStatusException;
 import kr.hhplus.be.server.user.UserRepository;
 import kr.hhplus.be.server.user.domain.User;
 import org.junit.jupiter.api.Test;
@@ -91,7 +91,7 @@ class ReservationServiceTest {
         // when
         // then
         assertThatThrownBy(() -> reservationService.reserveSeat(dto))
-                .isInstanceOf(SeatReservationException.class);
+                .isInstanceOf(InvalidSeatStatusException.class);
     }
 
     @Test
@@ -158,7 +158,7 @@ class ReservationServiceTest {
         // when
         // then
         assertThatThrownBy(() -> reservationService.pay(dto))
-                .isInstanceOf(SeatPaymentException.class);
+                .isInstanceOf(InvalidSeatStatusException.class);
 
     }
 
@@ -192,7 +192,7 @@ class ReservationServiceTest {
         // when
         // then
         assertThatThrownBy(() -> reservationService.pay(dto))
-                .isInstanceOf(SeatPaymentException.class);
+                .isInstanceOf(InvalidSeatUserStatusException.class);
 
     }
 }
