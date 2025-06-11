@@ -6,6 +6,8 @@ import kr.hhplus.be.server.concert.domain.Seat;
 import kr.hhplus.be.server.concert.domain.SeatStatus;
 import kr.hhplus.be.server.concert.repository.SeatRepository;
 import kr.hhplus.be.server.point.PointService;
+import kr.hhplus.be.server.reservation.application.service.ReservationService;
+import kr.hhplus.be.server.reservation.domain.PayHistoryRepository;
 import kr.hhplus.be.server.reservation.dto.PaymentReqDto;
 import kr.hhplus.be.server.reservation.dto.PaymentRespDto;
 import kr.hhplus.be.server.reservation.dto.SeatReservationReqDto;

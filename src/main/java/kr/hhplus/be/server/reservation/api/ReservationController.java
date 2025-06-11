@@ -1,5 +1,6 @@
-package kr.hhplus.be.server.reservation;
+package kr.hhplus.be.server.reservation.api;
 
+import kr.hhplus.be.server.reservation.application.usercase.ReservationUseCase;
 import kr.hhplus.be.server.reservation.dto.PaymentReqDto;
 import kr.hhplus.be.server.reservation.dto.PaymentRespDto;
 import kr.hhplus.be.server.reservation.dto.SeatReservationReqDto;
@@ -19,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class ReservationController {
 
-    private final ReservationService reservationService;
+    private final ReservationUseCase reservationUseCase;
 
     /* 좌석예약
     available 상태의 좌석을 선택하면
@@ -29,7 +30,7 @@ public class ReservationController {
     3분 후에 available로 변경)*/
     @PostMapping("/reservation")
     public ResponseEntity<SeatReservationRespDto> reserveSeat(@RequestBody SeatReservationReqDto dto) {
-        SeatReservationRespDto seat = reservationService.reserveSeat(dto);
+        SeatReservationRespDto seat = reservationUseCase.reserveSeat(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(seat);
     }
 
@@ -40,7 +41,7 @@ public class ReservationController {
         해당 좌석의 상태를 reserved로 변경*/
     @PostMapping("/payment")
     public ResponseEntity<PaymentRespDto> pay(@RequestBody PaymentReqDto dto) {
-        PaymentRespDto payment = reservationService.pay(dto);
+        PaymentRespDto payment = reservationUseCase.pay(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(payment);
     }
 }

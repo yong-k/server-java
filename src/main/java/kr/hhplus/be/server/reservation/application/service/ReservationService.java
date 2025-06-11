@@ -1,4 +1,4 @@
-package kr.hhplus.be.server.reservation;
+package kr.hhplus.be.server.reservation.application.service;
 
 import kr.hhplus.be.server.common.exception.DataNotFoundException;
 import kr.hhplus.be.server.concert.domain.Concert;
@@ -6,6 +6,8 @@ import kr.hhplus.be.server.concert.domain.ConcertSchedule;
 import kr.hhplus.be.server.concert.domain.Seat;
 import kr.hhplus.be.server.concert.repository.SeatRepository;
 import kr.hhplus.be.server.point.PointService;
+import kr.hhplus.be.server.reservation.domain.PayHistoryRepository;
+import kr.hhplus.be.server.reservation.application.usercase.ReservationUseCase;
 import kr.hhplus.be.server.reservation.domain.PayHistory;
 import kr.hhplus.be.server.reservation.domain.PaymentReason;
 import kr.hhplus.be.server.reservation.domain.PaymentStatus;
@@ -25,7 +27,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class ReservationService {
+public class ReservationService implements ReservationUseCase {
 
     private final SeatRepository seatRepository;
     private final PayHistoryRepository payHistoryRepository;
@@ -33,6 +35,7 @@ public class ReservationService {
 
     private final PointService pointService;
 
+    @Override
     @Transactional
     public SeatReservationRespDto reserveSeat(SeatReservationReqDto dto) {
         int seatId = dto.getSeatId();
@@ -54,6 +57,7 @@ public class ReservationService {
                 .build();
     }
 
+    @Override
     @Transactional
     public PaymentRespDto pay(PaymentReqDto dto) {
         int seatId = dto.getSeatId();
