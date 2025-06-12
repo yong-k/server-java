@@ -41,7 +41,7 @@ public class PayHistory {
     private String reason;
 
     @CreationTimestamp
-    @Column(name="created_at", updatable = false)
+    @Column(name="pay_at", updatable = false)
     private LocalDateTime payAt;
 
 }

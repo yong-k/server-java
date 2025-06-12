@@ -1,10 +1,7 @@
 package kr.hhplus.be.server.reservation.api;
 
-import kr.hhplus.be.server.reservation.application.usercase.ReservationUseCase;
-import kr.hhplus.be.server.reservation.dto.PaymentReqDto;
-import kr.hhplus.be.server.reservation.dto.PaymentRespDto;
-import kr.hhplus.be.server.reservation.dto.SeatReservationReqDto;
-import kr.hhplus.be.server.reservation.dto.SeatReservationRespDto;
+import kr.hhplus.be.server.reservation.application.port.in.ReservationUseCase;
+import kr.hhplus.be.server.reservation.dto.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -22,23 +19,18 @@ public class ReservationController {
 
     private final ReservationUseCase reservationUseCase;
 
-    /* 좌석예약
-    available 상태의 좌석을 선택하면
-    해당 좌석은 temp_reserved 상태로 변경
-    (5분 후에도 결제가 이뤄지지 않으면 expired로 변경[로그 기록]
-    1분 후에 hold로 변경
-    3분 후에 available로 변경)*/
+    @PostMapping("/reservation/token")
+    public ResponseEntity<ReservationTokenRespDto> issueToken(@RequestBody ReservationTokenReqDto dto) {
+        ReservationTokenRespDto token = reservationUseCase.issueToken(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(token);
+    }
+
     @PostMapping("/reservation")
     public ResponseEntity<SeatReservationRespDto> reserveSeat(@RequestBody SeatReservationReqDto dto) {
         SeatReservationRespDto seat = reservationUseCase.reserveSeat(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(seat);
     }
 
-    /* 결제
-    해당 좌석의 status가 temp_reserved이고, user_id가 해당 사용자인지 확인
-    if 확인결과 일치한다면,
-        사용자의 잔액을 확인하고 차감해
-        해당 좌석의 상태를 reserved로 변경*/
     @PostMapping("/payment")
     public ResponseEntity<PaymentRespDto> pay(@RequestBody PaymentReqDto dto) {
         PaymentRespDto payment = reservationUseCase.pay(dto);
