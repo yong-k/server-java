@@ -17,6 +17,7 @@ import kr.hhplus.be.server.reservation.dto.SeatReservationReqDto;
 import kr.hhplus.be.server.reservation.dto.SeatReservationRespDto;
 import kr.hhplus.be.server.reservation.exception.InvalidSeatStatusException;
 import kr.hhplus.be.server.reservation.exception.InvalidSeatUserStatusException;
+import kr.hhplus.be.server.reservation.infrastructure.external.SeatLockManager;
 import kr.hhplus.be.server.user.UserRepository;
 import kr.hhplus.be.server.user.domain.User;
 import lombok.RequiredArgsConstructor;
@@ -35,26 +36,33 @@ public class ReservationService implements ReservationUseCase {
 
     private final PointService pointService;
 
+    private final SeatLockManager seatLockManager;
+
     @Override
     @Transactional
     public SeatReservationRespDto reserveSeat(SeatReservationReqDto dto) {
         int seatId = dto.getSeatId();
         UUID userId = dto.getUserId();
 
-        Seat seat = seatRepository.findById(seatId)
-                .orElseThrow(() -> new DataNotFoundException("좌석이 존재하지 않습니다: seatId = " + seatId));
+        seatLockManager.lockSeat(seatId);
+        try {
+            Seat seat = seatRepository.findByIdWithLock(seatId)
+                    .orElseThrow(() -> new DataNotFoundException("좌석이 존재하지 않습니다: seatId = " + seatId));
 
-        seat.validateReservable();
+            seat.validateReservable();
 
-        // 해당 사용자에게 좌석 임시배정
-        seat.reserve(userId);
-        seat = seatRepository.save(seat);
+            // 해당 사용자에게 좌석 임시배정
+            seat.reserve(userId);
+            seat = seatRepository.save(seat);
 
-        return SeatReservationRespDto.builder()
-                .seatId(seat.getId())
-                .userId(seat.getUserId())
-                .status(seat.getStatus())
-                .build();
+            return SeatReservationRespDto.builder()
+                    .seatId(seat.getId())
+                    .userId(seat.getUserId())
+                    .status(seat.getStatus())
+                    .build();
+        } finally {
+            seatLockManager.unlockSeat(seatId);
+        }
     }
 
     @Override
