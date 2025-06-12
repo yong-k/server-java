@@ -11,10 +11,12 @@ import java.util.List;
 public interface ConcertScheduleRepository extends JpaRepository<ConcertSchedule, Integer> {
 
     @Query("""
-        SELECT new kr.hhplus.be.server.concert.dto.ConcertScheduleRespDto(cs.id, cs.scheduleAt, COUNT(s))
+        SELECT new kr.hhplus.be.server.concert.dto.ConcertScheduleRespDto(
+            cs.id, cs.scheduleAt, COUNT(CASE WHEN s.status = 'AVAILABLE' THEN 1 END)
+        )
         FROM ConcertSchedule cs JOIN Seat s 
             ON s.concertSchedule.id = cs.id
-        WHERE cs.concert.id = :concertId AND s.status = 'AVAILABLE'
+        WHERE cs.concert.id = :concertId
         GROUP BY cs.id, cs.scheduleAt
         ORDER BY cs.scheduleAt
     """)

@@ -1,6 +1,7 @@
 package kr.hhplus.be.server.common.exception;
 
 import kr.hhplus.be.server.point.exception.PointPolicyViolationException;
+import kr.hhplus.be.server.reservation.exception.InvalidReservationTokenException;
 import kr.hhplus.be.server.reservation.exception.InvalidSeatStatusException;
 import kr.hhplus.be.server.reservation.exception.InvalidSeatUserStatusException;
 import org.springframework.http.HttpStatus;
@@ -24,6 +25,13 @@ public class ApiControllerAdvice extends ResponseEntityExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponse("DATA_NOT_FOUND", e.getLocalizedMessage()));
+    }
+
+    @ExceptionHandler(InvalidReservationTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidReservationTokenException(InvalidReservationTokenException e) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse("INVALID_RESERVATION_TOKEN", e.getLocalizedMessage()));
     }
 
     @ExceptionHandler(InvalidSeatStatusException.class)

@@ -31,10 +31,10 @@ public class SeatStatusScheduler {
 
         // EXPIRED 1분 후 → HOLD
         List<Seat> toHold = seatRepository.findByStatusAndReleasedAtBefore(SeatStatus.EXPIRED, LocalDateTime.now());
-        toHold.forEach(seat -> seat.hold());
+        toHold.forEach(Seat::hold);
 
         // HOLD 3분 후 → AVAILABLE
         List<Seat> toRelease = seatRepository.findByStatusAndReleasedAtBefore(SeatStatus.HOLD, LocalDateTime.now());
-        toRelease.forEach(seat -> seat.release());
+        toRelease.forEach(Seat::release);
     }
 }

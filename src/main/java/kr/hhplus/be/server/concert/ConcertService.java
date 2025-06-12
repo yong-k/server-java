@@ -9,11 +9,15 @@ import kr.hhplus.be.server.concert.dto.*;
 import kr.hhplus.be.server.concert.repository.ConcertRepository;
 import kr.hhplus.be.server.concert.repository.ConcertScheduleRepository;
 import kr.hhplus.be.server.concert.repository.SeatRepository;
+import kr.hhplus.be.server.reservation.application.port.in.ReservationUseCase;
+import kr.hhplus.be.server.reservation.application.validator.ReservationTokenValidator;
+import kr.hhplus.be.server.reservation.dto.ReservationTokenReqDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -25,17 +29,29 @@ public class ConcertService {
     private final ConcertScheduleRepository concertScheduleRepository;
     private final SeatRepository seatRepository;
 
+    private final ReservationUseCase reservationUseCase;
+    private final ReservationTokenValidator reservationTokenValidator;
+
     public List<ConcertRespDto> getOngoingConcerts() {
         return concertRepository.findOngoingConcerts().stream()
                 .map(ConcertRespDto::from)
                 .collect(Collectors.toList());
     }
 
-    public List<ConcertScheduleRespDto> getSchedulesWithRemainingSeats(int concertId) {
+    // 콘서트 선택 후, 해당 콘서트일정 조회하면서 ──▷ 대기열토큰 발급
+    public List<ConcertScheduleRespDto> getSchedulesWithRemainingSeats(UUID userId, int concertId) {
+        // 대기열토큰 발급
+        reservationUseCase.issueToken(new ReservationTokenReqDto(userId, concertId));
         return concertScheduleRepository.findSchedulesWithRemainingSeats(concertId);
     }
 
-    public List<SeatRespDto> getSeatsBySchedule(int concertScheduleId) {
+    public List<SeatRespDto> getSeatsBySchedule(UUID userId, int concertScheduleId) {
+        // 대기열토큰 검증
+        ConcertSchedule schedule = concertScheduleRepository.findById(concertScheduleId)
+                .orElseThrow(() -> new DataNotFoundException("콘서트일정이 존재하지 않습니다: concertScheduleId = " + concertScheduleId));
+        int concertId = schedule.getConcert().getId();
+        reservationTokenValidator.validateToken(userId, concertId);
+
         return seatRepository.findByConcertSchedule_IdOrderByNumberAsc(concertScheduleId)
                 .stream()
                 .map(SeatRespDto::from)
