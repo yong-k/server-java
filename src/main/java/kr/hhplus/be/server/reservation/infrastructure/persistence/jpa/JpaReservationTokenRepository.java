@@ -9,4 +9,5 @@ import java.util.UUID;
 
 public interface JpaReservationTokenRepository extends JpaRepository<ReservationToken, UUID> {
     Optional<ReservationToken> findByUserIdAndConcertIdAndStatus(UUID userId, int concertId, ReservationTokenStatus status);
+
 }

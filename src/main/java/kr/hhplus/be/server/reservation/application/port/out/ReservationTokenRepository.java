@@ -12,4 +12,6 @@ public interface ReservationTokenRepository {
     Optional<ReservationToken> findById(UUID id);
 
     Optional<ReservationToken> findByUserIdAndConcertIdAndStatus(UUID userId, int concertId, ReservationTokenStatus status);
+
+    void deleteAll();
 }
