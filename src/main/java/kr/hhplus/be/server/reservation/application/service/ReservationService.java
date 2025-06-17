@@ -1,11 +1,10 @@
 package kr.hhplus.be.server.reservation.application.service;
 
 import kr.hhplus.be.server.common.exception.DataNotFoundException;
-import kr.hhplus.be.server.concert.domain.Concert;
-import kr.hhplus.be.server.concert.domain.ConcertSchedule;
 import kr.hhplus.be.server.concert.domain.Seat;
 import kr.hhplus.be.server.concert.repository.SeatRepository;
 import kr.hhplus.be.server.point.PointService;
+import kr.hhplus.be.server.reservation.application.port.in.PayHistoryUseCase;
 import kr.hhplus.be.server.reservation.application.port.out.PayHistoryRepository;
 import kr.hhplus.be.server.reservation.application.port.in.ReservationUseCase;
 import kr.hhplus.be.server.reservation.application.port.out.ReservationTokenRepository;
@@ -34,6 +33,7 @@ public class ReservationService implements ReservationUseCase {
     private final UserRepository userRepository;
 
     private final PointService pointService;
+    private final PayHistoryUseCase payHistoryUseCase;
 
     private final ReservationTokenValidator reservationTokenValidator;
     private final SeatLockManager seatLockManager;
@@ -44,7 +44,7 @@ public class ReservationService implements ReservationUseCase {
      * -토큰 없음 → 새로 발급
      * -토큰 있고 상태 READY → 기존 토큰 재사용
      * -토큰 있고 상태 EXPIRED → 새로 발급 (기존 토큰은 삭제)
-     * */
+     */
     @Override
     public ReservationTokenRespDto issueToken(ReservationTokenReqDto dto) {
         // 1. 기존 READY 상태인 토큰 있는지 조회
@@ -111,13 +111,14 @@ public class ReservationService implements ReservationUseCase {
         int concertId = seat.getConcertSchedule().getConcert().getId();
         reservationTokenValidator.validateToken(userId, concertId);
 
+        // 예외 상황에서도 결제 실패 이력을 반드시 남기기 위한 REQUIRES_NEW 트랜잭션 분리 [payHistoryUseCase.savePayHistory()]
         try {
             seat.validatePayable(userId);
-        } catch(InvalidSeatStatusException e) {
-            savePayHistory(seat, userId, PaymentStatus.FAILED, PaymentReason.INVALID_SEAT_STATUS);
+        } catch (InvalidSeatStatusException e) {
+            payHistoryUseCase.saveFailedHistory(seat, userId, PaymentStatus.FAILED, PaymentReason.INVALID_SEAT_STATUS);
             throw e;
-        } catch(InvalidSeatUserStatusException e) {
-            savePayHistory(seat, userId, PaymentStatus.FAILED, PaymentReason.INVALID_USER);
+        } catch (InvalidSeatUserStatusException e) {
+            payHistoryUseCase.saveFailedHistory(seat, userId, PaymentStatus.FAILED, PaymentReason.INVALID_USER);
             throw e;
         }
 
@@ -132,8 +133,8 @@ public class ReservationService implements ReservationUseCase {
         reservationTokenRepository.findByUserIdAndConcertIdAndStatus(userId, concertId, ReservationTokenStatus.READY)
                 .ifPresent(ReservationToken::expire);
 
-        // 결제내역 저장
-        savePayHistory(seat, userId, PaymentStatus.SUCCESS, null);
+        // 결제내역 저장 [여기는 예외 생기면 롤백되어야 함 => REQUIRED]
+        payHistoryUseCase.saveSuccessHistory(seat, userId, PaymentStatus.SUCCESS, null);
 
         return PaymentRespDto.builder()
                 .userId(userId)
@@ -143,29 +144,4 @@ public class ReservationService implements ReservationUseCase {
                 .seatStatus(seat.getStatus())
                 .build();
     }
-
-    private void savePayHistory(Seat seat, UUID userId, PaymentStatus status, PaymentReason reason) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new DataNotFoundException("사용자가 존재하지 않습니다: userId = " + userId));
-        ConcertSchedule schedule = seat.getConcertSchedule();
-        Concert concert = schedule.getConcert();
-
-        PayHistory history = PayHistory.builder()
-                .userId(user.getId())
-                .email(user.getEmail())
-                .concertId(concert.getId())
-                .concertName(concert.getName())
-                .concertScheduleId(schedule.getId())
-                .scheduleAt(schedule.getScheduleAt())
-                .seatId(seat.getId())
-                .seatNumber(seat.getNumber())
-                .seatPrice(seat.getPrice())
-                .amount(seat.getPrice())   //--수정필요) 나중에 할인같은거 생기면, 실제 결제금액을 넣어야한다.
-                .status(status)
-                .reason(reason != null ? reason.getMessage() : null)
-                .build();
-
-        payHistoryRepository.save(history);
-    }
-
 }

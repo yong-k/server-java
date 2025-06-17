@@ -6,6 +6,7 @@ import kr.hhplus.be.server.concert.domain.Seat;
 import kr.hhplus.be.server.concert.domain.SeatStatus;
 import kr.hhplus.be.server.concert.repository.SeatRepository;
 import kr.hhplus.be.server.point.PointService;
+import kr.hhplus.be.server.reservation.application.port.in.PayHistoryUseCase;
 import kr.hhplus.be.server.reservation.application.port.out.ReservationTokenRepository;
 import kr.hhplus.be.server.reservation.application.service.ReservationService;
 import kr.hhplus.be.server.reservation.application.port.out.PayHistoryRepository;
@@ -18,7 +19,6 @@ import kr.hhplus.be.server.reservation.exception.InvalidSeatStatusException;
 import kr.hhplus.be.server.reservation.exception.InvalidSeatUserStatusException;
 import kr.hhplus.be.server.reservation.infrastructure.external.SeatLockManager;
 import kr.hhplus.be.server.user.UserRepository;
-import kr.hhplus.be.server.user.domain.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,6 +45,8 @@ class ReservationServiceTest {
     private UserRepository userRepository;
     @Mock
     private PointService pointService;
+    @Mock
+    private PayHistoryUseCase payHistoryUseCase;
     @Mock
     private ReservationTokenValidator reservationTokenValidator;
     @Mock
@@ -115,7 +117,6 @@ class ReservationServiceTest {
         // given
         int seatId = 1;
         int price = 50000;
-        User user = new User(userId, 100000);
         Seat seat = Seat.builder()
                 .id(seatId)
                 .userId(userId)
@@ -127,7 +128,6 @@ class ReservationServiceTest {
         PaymentReqDto dto = new PaymentReqDto(seatId, userId);
 
         when(seatRepository.findById(seatId)).thenReturn(Optional.of(seat));
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
         // when
         PaymentRespDto actual = reservationService.pay(dto);
@@ -142,7 +142,6 @@ class ReservationServiceTest {
     void 결제_실패_좌석상태_TEMP_RESERVED_아님() {
         // given
         int seatId = 1;
-        User user = new User(userId, 100000);
         Seat seat = Seat.builder()
                 .id(seatId)
                 .userId(userId)
@@ -152,7 +151,6 @@ class ReservationServiceTest {
                 .build();
 
         when(seatRepository.findById(seatId)).thenReturn(Optional.of(seat));
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
         PaymentReqDto dto = new PaymentReqDto(seatId, userId);
 
@@ -169,8 +167,6 @@ class ReservationServiceTest {
         int seatId = 1;
         UUID seatOwnerId = UUID.randomUUID();
         UUID reqUserId = UUID.randomUUID();
-
-        User user = new User(reqUserId, 100000);
         Seat seat = Seat.builder()
                 .id(seatId)
                 .userId(seatOwnerId)
@@ -180,8 +176,6 @@ class ReservationServiceTest {
                 .build();
 
         when(seatRepository.findById(seatId)).thenReturn(Optional.of(seat));
-        when(userRepository.findById(reqUserId)).thenReturn(Optional.of(user));
-
 
         PaymentReqDto dto = new PaymentReqDto(seatId, reqUserId);
 

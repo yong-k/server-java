@@ -4,6 +4,8 @@ services:
     image: mysql:8.0
     ports:
       - "3307:3306"
+    command:
+      - --skip-character-set-client-handshake
     environment:
       - MYSQL_ROOT_PASSWORD=root
       - MYSQL_USER=application
