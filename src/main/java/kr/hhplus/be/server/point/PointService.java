@@ -35,7 +35,7 @@ public class PointService {
                 .orElseThrow(() -> new DataNotFoundException("사용자가 존재하지 않습니다: userId = " + userId));
 
         UserPoint userPoint = user.toUserPoint();
-        user.updatePoint(userPoint.charge(amount));
+        user.updatePoint(userPoint.charge(amount));     // Dirty Checking OK
 
         PointHistory pointHistory = pointRepository.save(PointHistory.builder()
                 .userId(userId)
@@ -53,7 +53,7 @@ public class PointService {
                 .orElseThrow(() -> new DataNotFoundException("사용자가 존재하지 않습니다: userId = " + userId));
 
         UserPoint userPoint = user.toUserPoint();
-        user.updatePoint(userPoint.use(amount));
+        user.updatePoint(userPoint.use(amount));    // Dirty Checking OK
 
         PointHistory pointHistory = pointRepository.save(PointHistory.builder()
                 .userId(userId)

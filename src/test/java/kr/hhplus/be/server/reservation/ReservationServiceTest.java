@@ -6,16 +6,20 @@ import kr.hhplus.be.server.concert.domain.Seat;
 import kr.hhplus.be.server.concert.domain.SeatStatus;
 import kr.hhplus.be.server.concert.repository.SeatRepository;
 import kr.hhplus.be.server.point.PointService;
+import kr.hhplus.be.server.reservation.application.port.out.ReservationTokenRepository;
 import kr.hhplus.be.server.reservation.application.service.ReservationService;
 import kr.hhplus.be.server.reservation.application.port.out.PayHistoryRepository;
+import kr.hhplus.be.server.reservation.application.validator.ReservationTokenValidator;
 import kr.hhplus.be.server.reservation.dto.PaymentReqDto;
 import kr.hhplus.be.server.reservation.dto.PaymentRespDto;
 import kr.hhplus.be.server.reservation.dto.SeatReservationReqDto;
 import kr.hhplus.be.server.reservation.dto.SeatReservationRespDto;
 import kr.hhplus.be.server.reservation.exception.InvalidSeatStatusException;
 import kr.hhplus.be.server.reservation.exception.InvalidSeatUserStatusException;
+import kr.hhplus.be.server.reservation.infrastructure.external.SeatLockManager;
 import kr.hhplus.be.server.user.UserRepository;
 import kr.hhplus.be.server.user.domain.User;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -32,37 +36,48 @@ import static org.mockito.Mockito.*;
 class ReservationServiceTest {
 
     @Mock
-    private SeatRepository seatRepository;
-
+    private ReservationTokenRepository reservationTokenRepository;
     @Mock
-    private UserRepository userRepository;
-
+    private SeatRepository seatRepository;
     @Mock
     private PayHistoryRepository payHistoryRepository;
-
+    @Mock
+    private UserRepository userRepository;
     @Mock
     private PointService pointService;
+    @Mock
+    private ReservationTokenValidator reservationTokenValidator;
+    @Mock
+    private SeatLockManager seatLockManager;
 
     @InjectMocks
     private ReservationService reservationService;
+
+    private UUID userId;
+    private Concert concert;
+    private ConcertSchedule schedule;
+    @BeforeEach
+    void setup() {
+        userId = UUID.randomUUID();
+        concert = Concert.builder().id(1).name("test_concert").build();
+        schedule = ConcertSchedule.builder()
+                .id(1)
+                .concert(concert)
+                .scheduleAt(LocalDateTime.now().plusDays(5))
+                .build();
+    }
 
     @Test
     void 좌석_예약_정상() {
         // given
         int seatId = 1;
-        UUID userId = UUID.randomUUID();
         Seat seat = Seat.builder()
                 .id(seatId)
                 .status(SeatStatus.AVAILABLE)
-                .build();
-        Seat reservedSeat = Seat.builder()
-                .id(seatId)
-                .userId(userId)
-                .status(SeatStatus.TEMP_RESERVED)
+                .concertSchedule(schedule)
                 .build();
 
-        when(seatRepository.findById(seatId)).thenReturn(Optional.of(seat));
-        when(seatRepository.save(any())).thenReturn(reservedSeat);
+        when(seatRepository.findByIdWithLock(seatId)).thenReturn(Optional.of(seat));
 
         SeatReservationReqDto dto = new SeatReservationReqDto(seatId, userId);
 
@@ -79,13 +94,13 @@ class ReservationServiceTest {
     void 좌석_예약_실패_예약불가좌석() {
         // given
         int seatId = 1;
-        UUID userId = UUID.randomUUID();
         Seat seat = Seat.builder()
                 .id(seatId)
                 .status(SeatStatus.RESERVED)
+                .concertSchedule(schedule)
                 .build();
 
-        when(seatRepository.findById(seatId)).thenReturn(Optional.of(seat));
+        when(seatRepository.findByIdWithLock(seatId)).thenReturn(Optional.of(seat));
 
         SeatReservationReqDto dto = new SeatReservationReqDto(seatId, userId);
 
@@ -99,16 +114,8 @@ class ReservationServiceTest {
     void 결제_성공() {
         // given
         int seatId = 1;
-        UUID userId = UUID.randomUUID();
         int price = 50000;
-
         User user = new User(userId, 100000);
-        Concert concert = Concert.builder().id(1).name("test_concert").build();
-        ConcertSchedule schedule = ConcertSchedule.builder()
-                .id(1)
-                .concert(concert)
-                .scheduleAt(LocalDateTime.now().plusDays(5))
-                .build();
         Seat seat = Seat.builder()
                 .id(seatId)
                 .userId(userId)
@@ -135,14 +142,7 @@ class ReservationServiceTest {
     void 결제_실패_좌석상태_TEMP_RESERVED_아님() {
         // given
         int seatId = 1;
-        UUID userId = UUID.randomUUID();
-
         User user = new User(userId, 100000);
-        ConcertSchedule schedule = ConcertSchedule.builder()
-                .id(1)
-                .concert(mock(Concert.class))
-                .scheduleAt(LocalDateTime.now().plusDays(5))
-                .build();
         Seat seat = Seat.builder()
                 .id(seatId)
                 .userId(userId)
@@ -171,11 +171,6 @@ class ReservationServiceTest {
         UUID reqUserId = UUID.randomUUID();
 
         User user = new User(reqUserId, 100000);
-        ConcertSchedule schedule = ConcertSchedule.builder()
-                .id(1)
-                .concert(mock(Concert.class))
-                .scheduleAt(LocalDateTime.now().plusDays(5))
-                .build();
         Seat seat = Seat.builder()
                 .id(seatId)
                 .userId(seatOwnerId)

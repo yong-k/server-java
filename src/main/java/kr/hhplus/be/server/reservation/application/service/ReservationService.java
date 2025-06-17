@@ -86,8 +86,7 @@ public class ReservationService implements ReservationUseCase {
             seat.validateReservable();
 
             // 해당 사용자에게 좌석 임시배정
-            seat.reserve(userId);
-            seat = seatRepository.save(seat);
+            seat.reserve(userId);   // Dirty Checking OK
 
             return SeatReservationRespDto.builder()
                     .seatId(seat.getId())
@@ -127,8 +126,7 @@ public class ReservationService implements ReservationUseCase {
         pointService.usePoint(userId, price);
 
         // 좌석 상태 변경
-        seat.pay();
-        seatRepository.save(seat);
+        seat.pay();     // Dirty Checking OK
 
         // 대기열토큰 만료 처리 (JPA dirty checking)
         reservationTokenRepository.findByUserIdAndConcertIdAndStatus(userId, concertId, ReservationTokenStatus.READY)
