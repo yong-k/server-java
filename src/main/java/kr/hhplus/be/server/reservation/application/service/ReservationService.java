@@ -13,9 +13,7 @@ import kr.hhplus.be.server.reservation.domain.*;
 import kr.hhplus.be.server.reservation.dto.*;
 import kr.hhplus.be.server.reservation.exception.InvalidSeatStatusException;
 import kr.hhplus.be.server.reservation.exception.InvalidSeatUserStatusException;
-import kr.hhplus.be.server.reservation.infrastructure.external.SeatLockManager;
 import kr.hhplus.be.server.user.UserRepository;
-import kr.hhplus.be.server.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,7 +34,6 @@ public class ReservationService implements ReservationUseCase {
     private final PayHistoryUseCase payHistoryUseCase;
 
     private final ReservationTokenValidator reservationTokenValidator;
-    private final SeatLockManager seatLockManager;
 
     /**
      * userId + concertId에 unique 조건 걸려있음
@@ -74,28 +71,24 @@ public class ReservationService implements ReservationUseCase {
         int seatId = dto.getSeatId();
         UUID userId = dto.getUserId();
 
-        seatLockManager.lockSeat(seatId);
-        try {
-            Seat seat = seatRepository.findByIdWithLock(seatId)
-                    .orElseThrow(() -> new DataNotFoundException("좌석이 존재하지 않습니다: seatId = " + seatId));
+        // JVM 락은 사용하지않고 DB락만 사용하여 예약 가능 여부 확인 → 상태 변경 → 저장까지 원자적으로 실행
+        Seat seat = seatRepository.findByIdForUpdate(seatId)
+                .orElseThrow(() -> new DataNotFoundException("좌석이 존재하지 않습니다: seatId = " + seatId));
 
-            // 대기열토큰 상태 체크
-            int concertId = seat.getConcertSchedule().getConcert().getId();
-            reservationTokenValidator.validateToken(userId, concertId);
+        // 대기열토큰 상태 체크
+        int concertId = seat.getConcertSchedule().getConcert().getId();
+        reservationTokenValidator.validateToken(userId, concertId);
 
-            seat.validateReservable();
+        seat.validateReservable();
 
-            // 해당 사용자에게 좌석 임시배정
-            seat.reserve(userId);   // Dirty Checking OK
+        // 해당 사용자에게 좌석 임시배정
+        seat.reserve(userId);   // Dirty Checking OK
 
-            return SeatReservationRespDto.builder()
-                    .seatId(seat.getId())
-                    .userId(seat.getUserId())
-                    .status(seat.getStatus())
-                    .build();
-        } finally {
-            seatLockManager.unlockSeat(seatId);
-        }
+        return SeatReservationRespDto.builder()
+                .seatId(seat.getId())
+                .userId(seat.getUserId())
+                .status(seat.getStatus())
+                .build();
     }
 
     @Override

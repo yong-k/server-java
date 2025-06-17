@@ -17,7 +17,6 @@ import kr.hhplus.be.server.reservation.dto.SeatReservationReqDto;
 import kr.hhplus.be.server.reservation.dto.SeatReservationRespDto;
 import kr.hhplus.be.server.reservation.exception.InvalidSeatStatusException;
 import kr.hhplus.be.server.reservation.exception.InvalidSeatUserStatusException;
-import kr.hhplus.be.server.reservation.infrastructure.external.SeatLockManager;
 import kr.hhplus.be.server.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,8 +48,6 @@ class ReservationServiceTest {
     private PayHistoryUseCase payHistoryUseCase;
     @Mock
     private ReservationTokenValidator reservationTokenValidator;
-    @Mock
-    private SeatLockManager seatLockManager;
 
     @InjectMocks
     private ReservationService reservationService;
@@ -79,7 +76,7 @@ class ReservationServiceTest {
                 .concertSchedule(schedule)
                 .build();
 
-        when(seatRepository.findByIdWithLock(seatId)).thenReturn(Optional.of(seat));
+        when(seatRepository.findByIdForUpdate(seatId)).thenReturn(Optional.of(seat));
 
         SeatReservationReqDto dto = new SeatReservationReqDto(seatId, userId);
 
@@ -102,7 +99,7 @@ class ReservationServiceTest {
                 .concertSchedule(schedule)
                 .build();
 
-        when(seatRepository.findByIdWithLock(seatId)).thenReturn(Optional.of(seat));
+        when(seatRepository.findByIdForUpdate(seatId)).thenReturn(Optional.of(seat));
 
         SeatReservationReqDto dto = new SeatReservationReqDto(seatId, userId);
 
