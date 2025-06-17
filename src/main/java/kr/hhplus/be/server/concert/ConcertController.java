@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @RestController
@@ -25,16 +26,18 @@ public class ConcertController {
     }
 
     // 선택한 콘서트의 전체 스케줄 목록 + 잔여좌석수
+    //--- X-USER-ID: 대기열토큰 발급 시, userId와 concertId 필요. 아직 jwt 적용 전이라 header로 userId 값 보내서 테스트 진행중 (변경 예정)
     @GetMapping("/concerts/{concertId}/schedules")
-    public ResponseEntity<List<ConcertScheduleRespDto>> getSchedulesWithRemainingSeats(@PathVariable("concertId") int concertId) {
-        List<ConcertScheduleRespDto> schedules = concertService.getSchedulesWithRemainingSeats(concertId);
+    public ResponseEntity<List<ConcertScheduleRespDto>> getSchedulesWithRemainingSeats(@RequestHeader("X-USER-ID") UUID userId, @PathVariable("concertId") int concertId) {
+        List<ConcertScheduleRespDto> schedules = concertService.getSchedulesWithRemainingSeats(userId, concertId);
         return ResponseEntity.ok(schedules);
     }
 
     // 선택 콘서트 스케줄의 좌석 목록
+    //--- X-USER-ID: 대기열토큰 발급 시, userId와 concertId 필요. 아직 jwt 적용 전이라 header로 userId 값 보내서 테스트 진행중 (변경 예정)
     @GetMapping("/schedules/{scheduleId}/seats")
-    public ResponseEntity<List<SeatRespDto>> getSeats(@PathVariable("scheduleId") int scheduleId) {
-        List<SeatRespDto> seats = concertService.getSeatsBySchedule(scheduleId);
+    public ResponseEntity<List<SeatRespDto>> getSeats(@RequestHeader("X-USER-ID") UUID userId, @PathVariable("scheduleId") int scheduleId) {
+        List<SeatRespDto> seats = concertService.getSeatsBySchedule(userId, scheduleId);
         return ResponseEntity.ok(seats);
     }
 

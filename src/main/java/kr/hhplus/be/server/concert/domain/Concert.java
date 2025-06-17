@@ -17,6 +17,6 @@ import lombok.NoArgsConstructor;
 public class Concert {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private Integer id;
     private String name;
 }

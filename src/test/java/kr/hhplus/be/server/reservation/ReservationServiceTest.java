@@ -6,6 +6,8 @@ import kr.hhplus.be.server.concert.domain.Seat;
 import kr.hhplus.be.server.concert.domain.SeatStatus;
 import kr.hhplus.be.server.concert.repository.SeatRepository;
 import kr.hhplus.be.server.point.PointService;
+import kr.hhplus.be.server.reservation.application.service.ReservationService;
+import kr.hhplus.be.server.reservation.application.port.out.PayHistoryRepository;
 import kr.hhplus.be.server.reservation.dto.PaymentReqDto;
 import kr.hhplus.be.server.reservation.dto.PaymentRespDto;
 import kr.hhplus.be.server.reservation.dto.SeatReservationReqDto;
@@ -21,8 +23,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;

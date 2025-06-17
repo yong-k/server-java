@@ -17,9 +17,9 @@ VALUES
     (2, 'Concert_02');
 INSERT INTO CONCERT_SCHEDULE (id, concert_id, schedule_at)
 VALUES
-    (1, 1, CONVERT_TZ('2025-06-10 19:00:00', 'Asia/Seoul', 'UTC')),
-    (2, 1,  CONVERT_TZ('2025-06-11 20:00:00', 'Asia/Seoul', 'UTC')),
-    (3, 2,  CONVERT_TZ('2025-06-06 11:51:00', 'Asia/Seoul', 'UTC'));
+    (1, 1, CONVERT_TZ('2025-07-10 19:00:00', 'Asia/Seoul', 'UTC')),
+    (2, 1,  CONVERT_TZ('2025-07-11 20:00:00', 'Asia/Seoul', 'UTC')),
+    (3, 2,  CONVERT_TZ('2025-07-06 11:51:00', 'Asia/Seoul', 'UTC'));
 -- schedule_id = 1, seat number 1~50
 INSERT INTO SEAT (id, concert_schedule_id, number, price, status)
 VALUES
@@ -133,7 +133,7 @@ VALUES
     (2, UNHEX(REPLACE('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '-', '')), 'USE', 1000, 4000, NOW() - INTERVAL 4 DAY),
     (3, UNHEX(REPLACE('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '-', '')), 'CHARGE', 3000, 7000, NOW() - INTERVAL 3 DAY),
     (4, UNHEX(REPLACE('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '-', '')), 'USE', 2000, 5000, NOW() - INTERVAL 2 DAY),
-    (5, UNHEX(REPLACE('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '-', '')), 'CHARGE', 5000, 10000, NOW() - INTERVAL 1 DAY);
+    (5, UNHEX(REPLACE('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '-', '')), 'CHARGE', 55000, 60000, NOW() - INTERVAL 1 DAY);
 
 --콘서트 첫 번째 스케줄의 1번 좌석을 한 유저가 결제 → 좌석 예약 완료 상태
 --1) USER 포인트 차감
@@ -142,7 +142,7 @@ SET point = point - 50000
 WHERE id = UNHEX(REPLACE('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '-', ''));
 --2) POINT_HISTORY 삽입 (포인트 사용)
 INSERT INTO POINT_HISTORY (id, user_id, type, amount, current_point, created_at)
-VALUES (6, UNHEX(REPLACE('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '-', '')), 'USE', 50000, 5000, NOW());
+VALUES (6, UNHEX(REPLACE('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '-', '')), 'USE', 50000, 10000, NOW());
 --3) PAY_HISTORY 삽입
 INSERT INTO PAY_HISTORY (
     id, user_id, email, concert_id, concert_name,
@@ -161,7 +161,7 @@ SET user_id = UNHEX(REPLACE('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '-', '')),
     reserved_at = NOW()
 WHERE id = 1;
 --5) RESERVATION_TOKEN (expired)
-INSERT INTO RESERVATION_TOKEN (id, user_id, concert_schedule_id, `order`, status, issued_at, expired_at)
+INSERT INTO RESERVATION_TOKEN (id, user_id, concert_id, `order`, status, issued_at, expired_at)
 VALUES (UNHEX(REPLACE('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '-', '')),
         UNHEX(REPLACE('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '-', '')),
         1, 1,'EXPIRED', NOW(), NULL);
