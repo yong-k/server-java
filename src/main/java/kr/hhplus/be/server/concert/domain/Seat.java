@@ -33,6 +33,11 @@ public class Seat {
     private SeatStatus status;
 
     private LocalDateTime releasedAt;
+
+    public void setReleasedAt(LocalDateTime releasedAt) {
+        this.releasedAt = releasedAt;
+    }
+
     private LocalDateTime reservedAt;
 
     public void reserve(UUID userId) {
