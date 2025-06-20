@@ -75,6 +75,7 @@ public class ReservationService implements ReservationUseCase {
         Seat seat = seatRepository.findByIdForUpdate(seatId)
                 .orElseThrow(() -> new DataNotFoundException("좌석이 존재하지 않습니다: seatId = " + seatId));
 
+
         // 대기열토큰 상태 체크
         int concertId = seat.getConcertSchedule().getConcert().getId();
         reservationTokenValidator.validateToken(userId, concertId);
