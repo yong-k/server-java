@@ -1,11 +1,10 @@
 package kr.hhplus.be.server.reservation.application.service;
 
 import kr.hhplus.be.server.common.exception.DataNotFoundException;
-import kr.hhplus.be.server.concert.domain.Concert;
-import kr.hhplus.be.server.concert.domain.ConcertSchedule;
 import kr.hhplus.be.server.concert.domain.Seat;
 import kr.hhplus.be.server.concert.repository.SeatRepository;
 import kr.hhplus.be.server.point.PointService;
+import kr.hhplus.be.server.reservation.application.port.in.PayHistoryUseCase;
 import kr.hhplus.be.server.reservation.application.port.out.PayHistoryRepository;
 import kr.hhplus.be.server.reservation.application.port.in.ReservationUseCase;
 import kr.hhplus.be.server.reservation.application.port.out.ReservationTokenRepository;
@@ -14,9 +13,7 @@ import kr.hhplus.be.server.reservation.domain.*;
 import kr.hhplus.be.server.reservation.dto.*;
 import kr.hhplus.be.server.reservation.exception.InvalidSeatStatusException;
 import kr.hhplus.be.server.reservation.exception.InvalidSeatUserStatusException;
-import kr.hhplus.be.server.reservation.infrastructure.external.SeatLockManager;
 import kr.hhplus.be.server.user.UserRepository;
-import kr.hhplus.be.server.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,9 +31,9 @@ public class ReservationService implements ReservationUseCase {
     private final UserRepository userRepository;
 
     private final PointService pointService;
+    private final PayHistoryUseCase payHistoryUseCase;
 
     private final ReservationTokenValidator reservationTokenValidator;
-    private final SeatLockManager seatLockManager;
 
     /**
      * userId + concertId에 unique 조건 걸려있음
@@ -44,7 +41,7 @@ public class ReservationService implements ReservationUseCase {
      * -토큰 없음 → 새로 발급
      * -토큰 있고 상태 READY → 기존 토큰 재사용
      * -토큰 있고 상태 EXPIRED → 새로 발급 (기존 토큰은 삭제)
-     * */
+     */
     @Override
     public ReservationTokenRespDto issueToken(ReservationTokenReqDto dto) {
         // 1. 기존 READY 상태인 토큰 있는지 조회
@@ -74,29 +71,25 @@ public class ReservationService implements ReservationUseCase {
         int seatId = dto.getSeatId();
         UUID userId = dto.getUserId();
 
-        seatLockManager.lockSeat(seatId);
-        try {
-            Seat seat = seatRepository.findByIdWithLock(seatId)
-                    .orElseThrow(() -> new DataNotFoundException("좌석이 존재하지 않습니다: seatId = " + seatId));
+        // JVM 락은 사용하지않고 DB락만 사용하여 예약 가능 여부 확인 → 상태 변경 → 저장까지 원자적으로 실행
+        Seat seat = seatRepository.findByIdForUpdate(seatId)
+                .orElseThrow(() -> new DataNotFoundException("좌석이 존재하지 않습니다: seatId = " + seatId));
 
-            // 대기열토큰 상태 체크
-            int concertId = seat.getConcertSchedule().getConcert().getId();
-            reservationTokenValidator.validateToken(userId, concertId);
 
-            seat.validateReservable();
+        // 대기열토큰 상태 체크
+        int concertId = seat.getConcertSchedule().getConcert().getId();
+        reservationTokenValidator.validateToken(userId, concertId);
 
-            // 해당 사용자에게 좌석 임시배정
-            seat.reserve(userId);
-            seat = seatRepository.save(seat);
+        seat.validateReservable();
 
-            return SeatReservationRespDto.builder()
-                    .seatId(seat.getId())
-                    .userId(seat.getUserId())
-                    .status(seat.getStatus())
-                    .build();
-        } finally {
-            seatLockManager.unlockSeat(seatId);
-        }
+        // 해당 사용자에게 좌석 임시배정
+        seat.reserve(userId);   // Dirty Checking OK
+
+        return SeatReservationRespDto.builder()
+                .seatId(seat.getId())
+                .userId(seat.getUserId())
+                .status(seat.getStatus())
+                .build();
     }
 
     @Override
@@ -112,13 +105,14 @@ public class ReservationService implements ReservationUseCase {
         int concertId = seat.getConcertSchedule().getConcert().getId();
         reservationTokenValidator.validateToken(userId, concertId);
 
+        // 예외 상황에서도 결제 실패 이력을 반드시 남기기 위한 REQUIRES_NEW 트랜잭션 분리 [payHistoryUseCase.savePayHistory()]
         try {
             seat.validatePayable(userId);
-        } catch(InvalidSeatStatusException e) {
-            savePayHistory(seat, userId, PaymentStatus.FAILED, PaymentReason.INVALID_SEAT_STATUS);
+        } catch (InvalidSeatStatusException e) {
+            payHistoryUseCase.saveFailedHistory(seat, userId, PaymentStatus.FAILED, PaymentReason.INVALID_SEAT_STATUS);
             throw e;
-        } catch(InvalidSeatUserStatusException e) {
-            savePayHistory(seat, userId, PaymentStatus.FAILED, PaymentReason.INVALID_USER);
+        } catch (InvalidSeatUserStatusException e) {
+            payHistoryUseCase.saveFailedHistory(seat, userId, PaymentStatus.FAILED, PaymentReason.INVALID_USER);
             throw e;
         }
 
@@ -127,15 +121,14 @@ public class ReservationService implements ReservationUseCase {
         pointService.usePoint(userId, price);
 
         // 좌석 상태 변경
-        seat.pay();
-        seatRepository.save(seat);
+        seat.pay();     // Dirty Checking OK
 
         // 대기열토큰 만료 처리 (JPA dirty checking)
         reservationTokenRepository.findByUserIdAndConcertIdAndStatus(userId, concertId, ReservationTokenStatus.READY)
                 .ifPresent(ReservationToken::expire);
 
-        // 결제내역 저장
-        savePayHistory(seat, userId, PaymentStatus.SUCCESS, null);
+        // 결제내역 저장 [여기는 예외 생기면 롤백되어야 함 => REQUIRED]
+        payHistoryUseCase.saveSuccessHistory(seat, userId, PaymentStatus.SUCCESS, null);
 
         return PaymentRespDto.builder()
                 .userId(userId)
@@ -145,29 +138,4 @@ public class ReservationService implements ReservationUseCase {
                 .seatStatus(seat.getStatus())
                 .build();
     }
-
-    private void savePayHistory(Seat seat, UUID userId, PaymentStatus status, PaymentReason reason) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new DataNotFoundException("사용자가 존재하지 않습니다: userId = " + userId));
-        ConcertSchedule schedule = seat.getConcertSchedule();
-        Concert concert = schedule.getConcert();
-
-        PayHistory history = PayHistory.builder()
-                .userId(user.getId())
-                .email(user.getEmail())
-                .concertId(concert.getId())
-                .concertName(concert.getName())
-                .concertScheduleId(schedule.getId())
-                .scheduleAt(schedule.getScheduleAt())
-                .seatId(seat.getId())
-                .seatNumber(seat.getNumber())
-                .seatPrice(seat.getPrice())
-                .amount(seat.getPrice())   //--수정필요) 나중에 할인같은거 생기면, 실제 결제금액을 넣어야한다.
-                .status(status)
-                .reason(reason != null ? reason.getMessage() : null)
-                .build();
-
-        payHistoryRepository.save(history);
-    }
-
 }

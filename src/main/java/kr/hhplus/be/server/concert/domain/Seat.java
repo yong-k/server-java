@@ -1,5 +1,6 @@
 package kr.hhplus.be.server.concert.domain;
 
+import com.google.common.annotations.VisibleForTesting;
 import jakarta.persistence.*;
 import kr.hhplus.be.server.reservation.exception.InvalidSeatStatusException;
 import kr.hhplus.be.server.reservation.exception.InvalidSeatUserStatusException;
@@ -33,6 +34,12 @@ public class Seat {
     private SeatStatus status;
 
     private LocalDateTime releasedAt;
+
+    @VisibleForTesting
+    public void setReleasedAt(LocalDateTime releasedAt) {
+        this.releasedAt = releasedAt;
+    }
+
     private LocalDateTime reservedAt;
 
     public void reserve(UUID userId) {
