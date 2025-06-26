@@ -45,41 +45,9 @@ public class ReservationTokenIntegrationTest extends BaseIntegrationTest {
     @Test
     void 대기열토큰_발급_성공() throws Exception {
         mockMvc.perform(post("/api/v1/reservation/token")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                        {
-                          "userId": "%s",
-                          "concertId": %d
-                        }
-                    """.formatted(testUserId, testConcert.getId())))
+                    .header("X-USER-ID", testUserId))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.status").value("READY"))
+                .andExpect(jsonPath("$.status").value("WAITING"))
                 .andDo(print());
     }
-
-    @Test
-    void 대기열토큰_발급_성공_EXPIRED상태_새로발급() throws Exception {
-        reservationTokenRepository.save(new ReservationToken(
-                UUID.randomUUID(),
-                testUserId,
-                testConcert.getId(),
-                1,
-                ReservationTokenStatus.EXPIRED,
-                LocalDateTime.now().minusMinutes(10),
-                LocalDateTime.now().minusMinutes(5)
-        ));
-
-        mockMvc.perform(post("/api/v1/reservation/token")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                        {
-                          "userId": "%s",
-                          "concertId": %d
-                        }
-                    """.formatted(testUserId, testConcert.getId())))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.status").value("READY"))
-                .andDo(print());
-    }
-
 }

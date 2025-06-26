@@ -24,7 +24,7 @@ public class SeatStatusScheduler {
     private final RetryTemplate retryTemplate;
 
     @Transactional
-    @Scheduled(fixedDelayString = "#{@seatStatusProperties.schedulerIntervalMs}")
+    @Scheduled(fixedDelayString = "${reservation.seat-status.scheduler-interval-ms:60000}")
     public void updateSeatStatus() {
         retryTemplate.execute(context -> {
             LocalDateTime now = LocalDateTime.now();

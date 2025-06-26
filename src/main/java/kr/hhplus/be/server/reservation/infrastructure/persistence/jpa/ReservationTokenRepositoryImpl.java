@@ -27,8 +27,8 @@ public class ReservationTokenRepositoryImpl implements ReservationTokenRepositor
     }
 
     @Override
-    public Optional<ReservationToken> findByUserIdAndConcertIdAndStatus(UUID userId, int concertId, ReservationTokenStatus status) {
-        return jpaRepository.findByUserIdAndConcertIdAndStatus(userId, concertId, status);
+    public Optional<ReservationToken> findByIdAndStatus(UUID tokenId, ReservationTokenStatus status) {
+        return jpaRepository.findByIdAndStatus(tokenId, status);
     }
 
     @Override

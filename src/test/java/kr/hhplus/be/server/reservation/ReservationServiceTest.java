@@ -11,6 +11,8 @@ import kr.hhplus.be.server.reservation.application.port.out.ReservationTokenRepo
 import kr.hhplus.be.server.reservation.application.service.ReservationService;
 import kr.hhplus.be.server.reservation.application.validator.ReservationTokenValidator;
 import kr.hhplus.be.server.reservation.config.SeatStatusProperties;
+import kr.hhplus.be.server.reservation.domain.ReservationToken;
+import kr.hhplus.be.server.reservation.domain.ReservationTokenStatus;
 import kr.hhplus.be.server.reservation.dto.PaymentReqDto;
 import kr.hhplus.be.server.reservation.dto.PaymentRespDto;
 import kr.hhplus.be.server.reservation.dto.SeatReservationReqDto;
@@ -52,6 +54,7 @@ class ReservationServiceTest {
     private UUID userId;
     private Concert concert;
     private ConcertSchedule schedule;
+    private UUID allowedTokenId;
     @BeforeEach
     void setup() {
         userId = UUID.randomUUID();
@@ -61,6 +64,14 @@ class ReservationServiceTest {
                 .concert(concert)
                 .scheduleAt(LocalDateTime.now().plusDays(5))
                 .build();
+
+        // ALLOWED 상태의 대기열토큰 생성 (테스트용)
+        allowedTokenId = UUID.randomUUID();
+        reservationTokenRepository.save(ReservationToken.builder()
+                .id(allowedTokenId)
+                .userId(UUID.randomUUID())
+                .status(ReservationTokenStatus.ALLOWED)
+                .build());
     }
 
     @Test
@@ -78,7 +89,7 @@ class ReservationServiceTest {
         SeatReservationReqDto dto = new SeatReservationReqDto(seatId, userId);
 
         // when
-        SeatReservationRespDto actual = reservationService.reserveSeat(dto);
+        SeatReservationRespDto actual = reservationService.reserveSeat(allowedTokenId, dto);
 
         // then
         assertThat(actual.getSeatId()).isEqualTo(seatId);
@@ -102,7 +113,7 @@ class ReservationServiceTest {
 
         // when
         // then
-        assertThatThrownBy(() -> reservationService.reserveSeat(dto))
+        assertThatThrownBy(() -> reservationService.reserveSeat(allowedTokenId, dto))
                 .isInstanceOf(InvalidSeatStatusException.class);
     }
 
@@ -124,7 +135,7 @@ class ReservationServiceTest {
         when(seatRepository.findById(seatId)).thenReturn(Optional.of(seat));
 
         // when
-        PaymentRespDto actual = reservationService.pay(dto);
+        PaymentRespDto actual = reservationService.pay(allowedTokenId, dto);
 
         // then
         assertThat(actual.getSeatId()).isEqualTo(seatId);
@@ -150,7 +161,7 @@ class ReservationServiceTest {
 
         // when
         // then
-        assertThatThrownBy(() -> reservationService.pay(dto))
+        assertThatThrownBy(() -> reservationService.pay(allowedTokenId, dto))
                 .isInstanceOf(InvalidSeatStatusException.class);
 
     }
@@ -175,7 +186,7 @@ class ReservationServiceTest {
 
         // when
         // then
-        assertThatThrownBy(() -> reservationService.pay(dto))
+        assertThatThrownBy(() -> reservationService.pay(allowedTokenId, dto))
                 .isInstanceOf(InvalidSeatUserStatusException.class);
 
     }

@@ -34,38 +34,24 @@ public class ReservationService implements ReservationUseCase {
     private final SeatStatusProperties seatStatusProperties;
 
     /**
-     * userId + concertId에 unique 조건 걸려있음
-     * 즉, userId + concertId로 조회했을 때:
-     * -토큰 없음 → 새로 발급
-     * -토큰 있고 상태 READY → 기존 토큰 재사용
-     * -토큰 있고 상태 EXPIRED → 새로 발급 (기존 토큰은 삭제)
+     * 새로고침했을 경우, 대기순번 새로 부여
+     * 기존 토큰 무시하고 새로 발급
      */
     @Override
-    public ReservationTokenRespDto issueToken(ReservationTokenReqDto dto) {
-        // 1. 기존 READY 상태인 토큰 있는지 조회
-        Optional<ReservationToken> token =
-                reservationTokenRepository.findByUserIdAndConcertIdAndStatus(dto.getUserId(), dto.getConcertId(), ReservationTokenStatus.READY);
-
-        // 2. 있으면 재사용
-        if (token.isPresent())
-            return ReservationTokenRespDto.from(token.get());
-
-        // 3. 없으면 발급
-        ReservationToken newToken = ReservationToken.builder()
+    public ReservationTokenRespDto issueToken(UUID userId) {
+        ReservationToken token = ReservationToken.builder()
                 .id(UUID.randomUUID())
-                .userId(dto.getUserId())
-                .concertId(dto.getConcertId())
-                .order(0)   // 나중에 order 필요시 로직 변경 필요 (사용자 많아서 예매페이지 진입전 대기해야될 때)
-                .status(ReservationTokenStatus.READY)
+                .userId(userId)
+                .order(0)   // 나중에 대기열구현 및 redis 도입하면서 변경 예정
+                .status(ReservationTokenStatus.WAITING)
                 .build();
 
-        newToken = reservationTokenRepository.save(newToken);
-        return ReservationTokenRespDto.from(newToken);
+        return ReservationTokenRespDto.from(reservationTokenRepository.save(token));
     }
 
     @Override
     @Transactional
-    public SeatReservationRespDto reserveSeat(SeatReservationReqDto dto) {
+    public SeatReservationRespDto reserveSeat(UUID tokenId, SeatReservationReqDto dto) {
         int seatId = dto.getSeatId();
         UUID userId = dto.getUserId();
 
@@ -74,9 +60,8 @@ public class ReservationService implements ReservationUseCase {
                 .orElseThrow(() -> new DataNotFoundException("좌석이 존재하지 않습니다: seatId = " + seatId));
 
 
-        // 대기열토큰 상태 체크
-        int concertId = seat.getConcertSchedule().getConcert().getId();
-        reservationTokenValidator.validateToken(userId, concertId);
+        // 대기열토큰 검증
+        reservationTokenValidator.validateToken(tokenId);
 
         seat.validateReservable();
 
@@ -92,16 +77,15 @@ public class ReservationService implements ReservationUseCase {
 
     @Override
     @Transactional
-    public PaymentRespDto pay(PaymentReqDto dto) {
+    public PaymentRespDto pay(UUID tokenId, PaymentReqDto dto) {
         int seatId = dto.getSeatId();
         UUID userId = dto.getUserId();
 
         Seat seat = seatRepository.findById(seatId)
                 .orElseThrow(() -> new DataNotFoundException("좌석이 존재하지 않습니다: seatId = " + seatId));
 
-        // 대기열토큰 상태 체크
-        int concertId = seat.getConcertSchedule().getConcert().getId();
-        reservationTokenValidator.validateToken(userId, concertId);
+        // 대기열토큰 검증
+        reservationTokenValidator.validateToken(tokenId);
 
         // 예외 상황에서도 결제 실패 이력을 반드시 남기기 위한 REQUIRES_NEW 트랜잭션 분리 [payHistoryUseCase.savePayHistory()]
         try {
@@ -122,8 +106,8 @@ public class ReservationService implements ReservationUseCase {
         seat.pay();     // Dirty Checking OK
 
         // 대기열토큰 만료 처리 (JPA dirty checking)
-        reservationTokenRepository.findByUserIdAndConcertIdAndStatus(userId, concertId, ReservationTokenStatus.READY)
-                .ifPresent(ReservationToken::expire);
+        reservationTokenRepository.findByIdAndStatus(tokenId, ReservationTokenStatus.ALLOWED)
+                .ifPresent(ReservationToken::complete);
 
         // 결제내역 저장 [여기는 예외 생기면 롤백되어야 함 => REQUIRED]
         payHistoryUseCase.saveSuccessHistory(seat, userId, PaymentStatus.SUCCESS, null);

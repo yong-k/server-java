@@ -21,16 +21,17 @@ public class ReservationTokenRespDto {
     private int order;
     private ReservationTokenStatus status;
     private LocalDateTime issuedAt;
+    private LocalDateTime updatedAt;
     private LocalDateTime expiredAt;
 
     public static ReservationTokenRespDto from(ReservationToken token) {
         return ReservationTokenRespDto.builder()
                 .id(token.getId())
                 .userId(token.getUserId())
-                .concertId(token.getConcertId())
                 .order(token.getOrder())
                 .status(token.getStatus())
                 .issuedAt(token.getIssuedAt())
+                .updatedAt(token.getUpdatedAt())
                 .expiredAt(token.getExpiredAt())
                 .build();
     }

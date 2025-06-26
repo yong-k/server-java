@@ -53,6 +53,7 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
     private Concert concert;
     private ConcertSchedule schedule;
     private Seat seat;
+    private UUID allowedTokenId;
 
     @BeforeEach
     void setup() {
@@ -71,8 +72,13 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
         schedule = concertScheduleRepository.save(new ConcertSchedule(null, concert, LocalDateTime.now().plusDays(3)));
         seat = seatRepository.save(new Seat(null, schedule, 1, 50_000, null, SeatStatus.AVAILABLE, null, null));
 
-        // 대기열 토큰 발급 (READY)
-        reservationTokenRepository.save(new ReservationToken(UUID.randomUUID(), userId, concert.getId(), 1, ReservationTokenStatus.READY, LocalDateTime.now(), null));
+        // ALLOWED 상태의 대기열토큰 생성 (테스트용)
+        allowedTokenId = UUID.randomUUID();
+        reservationTokenRepository.save(ReservationToken.builder()
+                .id(allowedTokenId)
+                .userId(UUID.randomUUID())
+                .status(ReservationTokenStatus.ALLOWED)
+                .build());
     }
 
     @Test
@@ -80,7 +86,7 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
         SeatReservationReqDto dto = new SeatReservationReqDto(seat.getId(), userId);
 
         mockMvc.perform(post("/api/v1/reservation")
-                        .header("X-USER-ID", userId)
+                        .header("X-TOKEN-ID", allowedTokenId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(asJsonString(dto)))
                 .andExpect(status().isCreated())
@@ -96,7 +102,7 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
         SeatReservationReqDto dto = new SeatReservationReqDto(seat.getId(), userId);
 
         mockMvc.perform(post("/api/v1/reservation")
-                        .header("X-USER-ID", userId)
+                        .header("X-TOKEN-ID", allowedTokenId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(asJsonString(dto)))
                 .andExpect(status().isBadRequest())
@@ -111,7 +117,7 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
         PaymentReqDto dto = new PaymentReqDto(seat.getId(), userId);
 
         mockMvc.perform(post("/api/v1/payment")
-                        .header("X-USER-ID", userId)
+                        .header("X-TOKEN-ID", allowedTokenId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(asJsonString(dto)))
                 .andExpect(status().isCreated())
@@ -129,7 +135,7 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
         PaymentReqDto dto = new PaymentReqDto(seat.getId(), userId);
 
         mockMvc.perform(post("/api/v1/payment")
-                        .header("X-USER-ID", userId)
+                        .header("X-TOKEN-ID", allowedTokenId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(asJsonString(dto)))
                 .andExpect(status().isBadRequest())
@@ -143,7 +149,7 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
         PaymentReqDto dto = new PaymentReqDto(seat.getId(), userId);
 
         mockMvc.perform(post("/api/v1/payment")
-                        .header("X-USER-ID", userId)
+                        .header("X-TOKEN-ID", allowedTokenId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(asJsonString(dto)))
                 .andExpect(status().isBadRequest())
@@ -158,7 +164,7 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
         PaymentReqDto dto = new PaymentReqDto(seat.getId(), userId);
 
         mockMvc.perform(post("/api/v1/payment")
-                        .header("X-USER-ID", userId)
+                        .header("X-TOKEN-ID", allowedTokenId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(asJsonString(dto)))
                 .andExpect(status().isBadRequest())

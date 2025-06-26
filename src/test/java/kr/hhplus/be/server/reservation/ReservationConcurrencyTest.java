@@ -8,8 +8,11 @@ import kr.hhplus.be.server.concert.domain.SeatStatus;
 import kr.hhplus.be.server.concert.repository.ConcertRepository;
 import kr.hhplus.be.server.concert.repository.ConcertScheduleRepository;
 import kr.hhplus.be.server.concert.repository.SeatRepository;
+import kr.hhplus.be.server.reservation.application.port.out.ReservationTokenRepository;
 import kr.hhplus.be.server.reservation.application.service.ReservationService;
 import kr.hhplus.be.server.reservation.application.validator.ReservationTokenValidator;
+import kr.hhplus.be.server.reservation.domain.ReservationToken;
+import kr.hhplus.be.server.reservation.domain.ReservationTokenStatus;
 import kr.hhplus.be.server.reservation.dto.SeatReservationReqDto;
 import kr.hhplus.be.server.reservation.dto.SeatReservationRespDto;
 import lombok.extern.slf4j.Slf4j;
@@ -40,14 +43,15 @@ public class ReservationConcurrencyTest extends BaseIntegrationTest {
     private ConcertScheduleRepository concertScheduleRepository;
     @Autowired
     private SeatRepository seatRepository;
-
     @MockitoBean
     ReservationTokenValidator tokenValidator;
-
     @Autowired
     private ReservationService reservationService;
+    @Autowired
+    ReservationTokenRepository reservationTokenRepository;
 
     private Seat seat;
+    private UUID allowedTokenId;
 
     @BeforeEach
     void setup() {
@@ -58,6 +62,14 @@ public class ReservationConcurrencyTest extends BaseIntegrationTest {
         Concert concert = concertRepository.save(new Concert(null, "concert_A"));
         ConcertSchedule schedule = concertScheduleRepository.save(new ConcertSchedule(null, concert, LocalDateTime.now().plusDays(3)));
         seat = seatRepository.save(new Seat(null, schedule, 1, 10000, null, SeatStatus.AVAILABLE, null, null));
+
+        // ALLOWED 상태의 대기열토큰 생성 (테스트용)
+        allowedTokenId = UUID.randomUUID();
+        reservationTokenRepository.save(ReservationToken.builder()
+                .id(allowedTokenId)
+                .userId(UUID.randomUUID())
+                .status(ReservationTokenStatus.ALLOWED)
+                .build());
     }
 
     @Test
@@ -68,14 +80,14 @@ public class ReservationConcurrencyTest extends BaseIntegrationTest {
 
         List<SeatReservationRespDto> successList = new ArrayList<>();
 
-        doNothing().when(tokenValidator).validateToken(any(), anyInt());
+        doNothing().when(tokenValidator).validateToken(any());
 
         for (int i = 0; i < threadCount; i++) {
             UUID userId = UUID.randomUUID();
             executor.submit(() -> {
                 try {
                     SeatReservationReqDto reqDto = new SeatReservationReqDto(seat.getId(), userId);
-                    SeatReservationRespDto respDto = reservationService.reserveSeat(reqDto);
+                    SeatReservationRespDto respDto = reservationService.reserveSeat(allowedTokenId, reqDto);
                     successList.add(respDto);
                 } catch (Exception e) {
                 } finally {

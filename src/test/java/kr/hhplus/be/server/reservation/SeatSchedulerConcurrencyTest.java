@@ -10,9 +10,12 @@ import kr.hhplus.be.server.concert.repository.ConcertScheduleRepository;
 import kr.hhplus.be.server.concert.repository.SeatRepository;
 import kr.hhplus.be.server.point.PointService;
 import kr.hhplus.be.server.point.dto.PointRespDto;
+import kr.hhplus.be.server.reservation.application.port.out.ReservationTokenRepository;
 import kr.hhplus.be.server.reservation.application.service.ReservationService;
 import kr.hhplus.be.server.reservation.application.validator.ReservationTokenValidator;
 import kr.hhplus.be.server.reservation.config.SeatStatusProperties;
+import kr.hhplus.be.server.reservation.domain.ReservationToken;
+import kr.hhplus.be.server.reservation.domain.ReservationTokenStatus;
 import kr.hhplus.be.server.reservation.dto.PaymentReqDto;
 import kr.hhplus.be.server.reservation.scheduler.SeatStatusScheduler;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +50,8 @@ public class SeatSchedulerConcurrencyTest extends BaseIntegrationTest {
     private ReservationService reservationService;
     @Autowired
     private SeatStatusProperties seatStatusProperties;
+    @Autowired
+    private ReservationTokenRepository reservationTokenRepository;
 
     @MockitoBean
     private ReservationTokenValidator tokenValidator;
@@ -55,6 +60,7 @@ public class SeatSchedulerConcurrencyTest extends BaseIntegrationTest {
 
     private Seat seat;
     private UUID userId;
+    private UUID allowedTokenId;
 
     @BeforeEach
     void setup() {
@@ -71,7 +77,15 @@ public class SeatSchedulerConcurrencyTest extends BaseIntegrationTest {
         // flush 해서 DB에 반영
        seatRepository.saveAndFlush(seat);
 
-        doNothing().when(tokenValidator).validateToken(any(), anyInt());
+        // ALLOWED 상태의 대기열토큰 저장
+        allowedTokenId = UUID.randomUUID();
+        reservationTokenRepository.save(ReservationToken.builder()
+                .id(allowedTokenId)
+                .userId(userId)
+                .status(ReservationTokenStatus.ALLOWED)
+                .build());
+
+        doNothing().when(tokenValidator).validateToken(allowedTokenId);
         doReturn(mock(PointRespDto.class)).when(pointService).usePoint(any(), anyInt());
     }
 
@@ -83,7 +97,7 @@ public class SeatSchedulerConcurrencyTest extends BaseIntegrationTest {
         // 결제
         executor.submit(() -> {
             try {
-                reservationService.pay(new PaymentReqDto(seat.getId(), userId));
+                reservationService.pay(allowedTokenId, new PaymentReqDto(seat.getId(), userId));
                 log.info("결제 성공");
             } catch (Exception e) {
                 log.info("결제 실패");

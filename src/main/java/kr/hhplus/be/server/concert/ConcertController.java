@@ -20,24 +20,22 @@ public class ConcertController {
 
     // 진행중인 콘서트 목록 조회
     @GetMapping("/concerts")
-    public ResponseEntity<List<ConcertRespDto>> getOngoingConcerts() {
-        List<ConcertRespDto> concerts = concertService.getOngoingConcerts();
+    public ResponseEntity<List<ConcertRespDto>> getOngoingConcerts(@RequestHeader("X-TOKEN-ID") UUID tokenId) {
+        List<ConcertRespDto> concerts = concertService.getOngoingConcerts(tokenId);
         return ResponseEntity.ok(concerts);
     }
 
     // 선택한 콘서트의 전체 스케줄 목록 + 잔여좌석수
-    //--- X-USER-ID: 대기열토큰 발급 시, userId와 concertId 필요. 아직 jwt 적용 전이라 header로 userId 값 보내서 테스트 진행중 (변경 예정)
     @GetMapping("/concerts/{concertId}/schedules")
-    public ResponseEntity<List<ConcertScheduleRespDto>> getSchedulesWithRemainingSeats(@RequestHeader("X-USER-ID") UUID userId, @PathVariable("concertId") int concertId) {
-        List<ConcertScheduleRespDto> schedules = concertService.getSchedulesWithRemainingSeats(userId, concertId);
+    public ResponseEntity<List<ConcertScheduleRespDto>> getSchedulesWithRemainingSeats(@RequestHeader("X-TOKEN-ID") UUID tokenId, @PathVariable("concertId") int concertId) {
+        List<ConcertScheduleRespDto> schedules = concertService.getSchedulesWithRemainingSeats(tokenId, concertId);
         return ResponseEntity.ok(schedules);
     }
 
     // 선택 콘서트 스케줄의 좌석 목록
-    //--- X-USER-ID: 대기열토큰 발급 시, userId와 concertId 필요. 아직 jwt 적용 전이라 header로 userId 값 보내서 테스트 진행중 (변경 예정)
     @GetMapping("/schedules/{scheduleId}/seats")
-    public ResponseEntity<List<SeatRespDto>> getSeats(@RequestHeader("X-USER-ID") UUID userId, @PathVariable("scheduleId") int scheduleId) {
-        List<SeatRespDto> seats = concertService.getSeatsBySchedule(userId, scheduleId);
+    public ResponseEntity<List<SeatRespDto>> getSeats(@RequestHeader("X-TOKEN-ID") UUID tokenId, @PathVariable("scheduleId") int scheduleId) {
+        List<SeatRespDto> seats = concertService.getSeatsBySchedule(tokenId, scheduleId);
         return ResponseEntity.ok(seats);
     }
 
