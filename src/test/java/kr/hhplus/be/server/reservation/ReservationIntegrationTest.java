@@ -10,6 +10,7 @@ import kr.hhplus.be.server.concert.repository.ConcertRepository;
 import kr.hhplus.be.server.concert.repository.ConcertScheduleRepository;
 import kr.hhplus.be.server.concert.repository.SeatRepository;
 import kr.hhplus.be.server.reservation.application.port.out.ReservationTokenRepository;
+import kr.hhplus.be.server.reservation.config.SeatStatusProperties;
 import kr.hhplus.be.server.reservation.domain.ReservationToken;
 import kr.hhplus.be.server.reservation.domain.ReservationTokenStatus;
 import kr.hhplus.be.server.reservation.dto.PaymentReqDto;
@@ -35,21 +36,18 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
-
     @Autowired
     private UserRepository userRepository;
-
     @Autowired
     private ConcertRepository concertRepository;
-
     @Autowired
     private ConcertScheduleRepository concertScheduleRepository;
-
     @Autowired
     private SeatRepository seatRepository;
-
     @Autowired
     private ReservationTokenRepository reservationTokenRepository;
+    @Autowired
+    private SeatStatusProperties seatStatusProperties;
 
     private UUID userId;
     private Concert concert;
@@ -92,7 +90,7 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void 예약_실패_이미예약됨() throws Exception {
-        seat.reserve(userId);
+        seat.reserve(userId, seatStatusProperties.getTempReservedToExpiredMinutes());
         seatRepository.save(seat);
 
         SeatReservationReqDto dto = new SeatReservationReqDto(seat.getId(), userId);
@@ -107,7 +105,7 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void 결제_성공() throws Exception {
-        seat.reserve(userId);
+        seat.reserve(userId, seatStatusProperties.getTempReservedToExpiredMinutes());
         seatRepository.save(seat);
 
         PaymentReqDto dto = new PaymentReqDto(seat.getId(), userId);
@@ -125,7 +123,7 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
     @Test
     void 결제_실패_포인트부족() throws Exception {
         userRepository.save(new User(userId, 10));
-        seat.reserve(userId);
+        seat.reserve(userId, seatStatusProperties.getTempReservedToExpiredMinutes());
         seatRepository.save(seat);
 
         PaymentReqDto dto = new PaymentReqDto(seat.getId(), userId);

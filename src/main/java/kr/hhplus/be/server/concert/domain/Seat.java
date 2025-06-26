@@ -42,10 +42,10 @@ public class Seat {
 
     private LocalDateTime reservedAt;
 
-    public void reserve(UUID userId) {
+    public void reserve(UUID userId, long tempReservedToExpiredMinutes) {
         this.userId = userId;
         this.status = SeatStatus.TEMP_RESERVED;
-        this.releasedAt = LocalDateTime.now().plusMinutes(5);   // 임시배정 5분 후 → 만료 처리
+        this.releasedAt = LocalDateTime.now().plusMinutes(tempReservedToExpiredMinutes);   // 임시배정 → 만료 처리
     }
 
     public void pay() {
@@ -54,14 +54,14 @@ public class Seat {
         this.releasedAt = null;
     }
 
-    public void expire() {
+    public void expire(long expiredToHoldMinutes) {
         this.status = SeatStatus.EXPIRED;
-        this.releasedAt = LocalDateTime.now().plusMinutes(1);   // 만료 1분 후 → 보류 처리
+        this.releasedAt = LocalDateTime.now().plusMinutes(expiredToHoldMinutes);   // 만료 → 보류 처리
     }
 
-    public void hold() {
+    public void hold(long holdToAvailableMinutes) {
         this.status = SeatStatus.HOLD;
-        this.releasedAt = LocalDateTime.now().plusMinutes(3);   // 보류 3분 후 → 예약가능 처리
+        this.releasedAt = LocalDateTime.now().plusMinutes(holdToAvailableMinutes);   // 보류 → 예약가능 처리
     }
 
     public void release() {

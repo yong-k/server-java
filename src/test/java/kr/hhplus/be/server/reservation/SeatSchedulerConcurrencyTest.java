@@ -12,6 +12,7 @@ import kr.hhplus.be.server.point.PointService;
 import kr.hhplus.be.server.point.dto.PointRespDto;
 import kr.hhplus.be.server.reservation.application.service.ReservationService;
 import kr.hhplus.be.server.reservation.application.validator.ReservationTokenValidator;
+import kr.hhplus.be.server.reservation.config.SeatStatusProperties;
 import kr.hhplus.be.server.reservation.dto.PaymentReqDto;
 import kr.hhplus.be.server.reservation.scheduler.SeatStatusScheduler;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +45,8 @@ public class SeatSchedulerConcurrencyTest extends BaseIntegrationTest {
     private SeatStatusScheduler scheduler;
     @Autowired
     private ReservationService reservationService;
+    @Autowired
+    private SeatStatusProperties seatStatusProperties;
 
     @MockitoBean
     private ReservationTokenValidator tokenValidator;
@@ -60,7 +63,7 @@ public class SeatSchedulerConcurrencyTest extends BaseIntegrationTest {
         seat = seatRepository.save(new Seat(null, schedule, 1, 10_000, null, SeatStatus.AVAILABLE, null, null));
 
         userId = UUID.randomUUID();
-        seat.reserve(userId);
+        seat.reserve(userId, seatStatusProperties.getTempReservedToExpiredMinutes());
 
         // releasedAt 을 과거로 돌려 스케줄러가 즉시 EXPIRED 처리하도록 함
         seat.setReleasedAt(LocalDateTime.now().minusMinutes(1));

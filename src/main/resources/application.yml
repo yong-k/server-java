@@ -35,3 +35,10 @@ spring:
 
 server:
   port: 8081
+
+reservation:
+  seat-status:
+    scheduler-interval-ms: 60000
+    temp-reserved-to-expired-minutes: 5
+    expired-to-hold-minutes: 1
+    hold-to-available-minutes: 3

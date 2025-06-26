@@ -5,15 +5,14 @@ import kr.hhplus.be.server.concert.domain.Seat;
 import kr.hhplus.be.server.concert.repository.SeatRepository;
 import kr.hhplus.be.server.point.PointService;
 import kr.hhplus.be.server.reservation.application.port.in.PayHistoryUseCase;
-import kr.hhplus.be.server.reservation.application.port.out.PayHistoryRepository;
 import kr.hhplus.be.server.reservation.application.port.in.ReservationUseCase;
 import kr.hhplus.be.server.reservation.application.port.out.ReservationTokenRepository;
 import kr.hhplus.be.server.reservation.application.validator.ReservationTokenValidator;
+import kr.hhplus.be.server.reservation.config.SeatStatusProperties;
 import kr.hhplus.be.server.reservation.domain.*;
 import kr.hhplus.be.server.reservation.dto.*;
 import kr.hhplus.be.server.reservation.exception.InvalidSeatStatusException;
 import kr.hhplus.be.server.reservation.exception.InvalidSeatUserStatusException;
-import kr.hhplus.be.server.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,13 +26,12 @@ public class ReservationService implements ReservationUseCase {
 
     private final ReservationTokenRepository reservationTokenRepository;
     private final SeatRepository seatRepository;
-    private final PayHistoryRepository payHistoryRepository;
-    private final UserRepository userRepository;
 
     private final PointService pointService;
     private final PayHistoryUseCase payHistoryUseCase;
 
     private final ReservationTokenValidator reservationTokenValidator;
+    private final SeatStatusProperties seatStatusProperties;
 
     /**
      * userId + concertId에 unique 조건 걸려있음
@@ -83,7 +81,7 @@ public class ReservationService implements ReservationUseCase {
         seat.validateReservable();
 
         // 해당 사용자에게 좌석 임시배정
-        seat.reserve(userId);   // Dirty Checking OK
+        seat.reserve(userId, seatStatusProperties.getTempReservedToExpiredMinutes());   // Dirty Checking OK
 
         return SeatReservationRespDto.builder()
                 .seatId(seat.getId())

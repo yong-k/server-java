@@ -9,15 +9,14 @@ import kr.hhplus.be.server.point.PointService;
 import kr.hhplus.be.server.reservation.application.port.in.PayHistoryUseCase;
 import kr.hhplus.be.server.reservation.application.port.out.ReservationTokenRepository;
 import kr.hhplus.be.server.reservation.application.service.ReservationService;
-import kr.hhplus.be.server.reservation.application.port.out.PayHistoryRepository;
 import kr.hhplus.be.server.reservation.application.validator.ReservationTokenValidator;
+import kr.hhplus.be.server.reservation.config.SeatStatusProperties;
 import kr.hhplus.be.server.reservation.dto.PaymentReqDto;
 import kr.hhplus.be.server.reservation.dto.PaymentRespDto;
 import kr.hhplus.be.server.reservation.dto.SeatReservationReqDto;
 import kr.hhplus.be.server.reservation.dto.SeatReservationRespDto;
 import kr.hhplus.be.server.reservation.exception.InvalidSeatStatusException;
 import kr.hhplus.be.server.reservation.exception.InvalidSeatUserStatusException;
-import kr.hhplus.be.server.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,15 +38,13 @@ class ReservationServiceTest {
     @Mock
     private SeatRepository seatRepository;
     @Mock
-    private PayHistoryRepository payHistoryRepository;
-    @Mock
-    private UserRepository userRepository;
-    @Mock
     private PointService pointService;
     @Mock
     private PayHistoryUseCase payHistoryUseCase;
     @Mock
     private ReservationTokenValidator reservationTokenValidator;
+    @Mock
+    private SeatStatusProperties seatStatusProperties;
 
     @InjectMocks
     private ReservationService reservationService;
