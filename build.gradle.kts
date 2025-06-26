@@ -46,6 +46,9 @@ dependencies {
 	// Guava 추가 (컴파일만 있으면 충분)
 	implementation("com.google.guava:guava")
 
+	// retry
+	implementation("org.springframework.retry:spring-retry")
+
     // Test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.boot:spring-boot-testcontainers")
