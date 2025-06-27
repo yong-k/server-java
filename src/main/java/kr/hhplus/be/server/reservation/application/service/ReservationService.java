@@ -17,8 +17,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -82,7 +80,7 @@ public class ReservationService implements ReservationUseCase {
         int seatId = dto.getSeatId();
         UUID userId = dto.getUserId();
 
-        Seat seat = seatRepository.findById(seatId)
+        Seat seat = seatRepository.findByIdForUpdate(seatId)
                 .orElseThrow(() -> new DataNotFoundException("좌석이 존재하지 않습니다: seatId = " + seatId));
 
         // 대기열토큰 검증

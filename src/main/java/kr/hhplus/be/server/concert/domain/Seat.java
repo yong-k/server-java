@@ -4,16 +4,14 @@ import com.google.common.annotations.VisibleForTesting;
 import jakarta.persistence.*;
 import kr.hhplus.be.server.reservation.exception.InvalidSeatStatusException;
 import kr.hhplus.be.server.reservation.exception.InvalidSeatUserStatusException;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
