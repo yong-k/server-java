@@ -42,3 +42,6 @@ reservation:
     temp-reserved-to-expired-minutes: 5
     expired-to-hold-minutes: 1
     hold-to-available-minutes: 3
+  token:
+    scheduler-interval-ms: 60000
+    allowed-to-timeout-minutes: 10

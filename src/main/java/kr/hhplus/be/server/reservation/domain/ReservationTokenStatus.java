@@ -2,10 +2,6 @@ package kr.hhplus.be.server.reservation.domain;
 
 /**
  * 대기열토큰 상태 종류
- * - WAITING : 대기
- * - READY : 입장가능
- * - EXPIRED : 만료
- *
  * - WAITING    : 대기
  * - ALLOWED    : 입장가능
  * - TIMEOUT    : 만료(시간초과)
@@ -16,8 +12,4 @@ public enum ReservationTokenStatus {
     ALLOWED,
     TIMEOUT,
     COMPLETED,
-
-
-    READY,
-    EXPIRED
 }

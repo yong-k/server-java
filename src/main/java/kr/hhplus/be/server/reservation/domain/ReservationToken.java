@@ -38,6 +38,13 @@ public class ReservationToken {
 
     private LocalDateTime expiredAt;
 
+    // ALLOWED된 후, 일정 시간 내에 결제되지 않으면 TIMEOUT 처리를 위해 expiredAt 설정 (스케줄러)
+    //--나중에 대기열 구현하면서, 토큰 allowed 처리할 때 사용 예정
+    public void allow(long allowedToTimeoutMinutes) {
+        this.status = ReservationTokenStatus.ALLOWED;
+        this.expiredAt = LocalDateTime.now().plusMinutes(allowedToTimeoutMinutes);
+    }
+
     public void timeout() {
         this.status = ReservationTokenStatus.TIMEOUT;
         this.expiredAt = LocalDateTime.now();
