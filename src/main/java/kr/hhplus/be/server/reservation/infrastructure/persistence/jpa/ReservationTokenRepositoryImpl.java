@@ -6,6 +6,8 @@ import kr.hhplus.be.server.reservation.domain.ReservationTokenStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,20 +17,19 @@ public class ReservationTokenRepositoryImpl implements ReservationTokenRepositor
 
     private final JpaReservationTokenRepository jpaRepository;
 
-
     @Override
     public ReservationToken save(ReservationToken token) {
         return jpaRepository.save(token);
     }
 
     @Override
-    public Optional<ReservationToken> findById(UUID id) {
-        return jpaRepository.findById(id);
+    public Optional<ReservationToken> findByIdAndStatus(UUID tokenId, ReservationTokenStatus status) {
+        return jpaRepository.findByIdAndStatus(tokenId, status);
     }
 
     @Override
-    public Optional<ReservationToken> findByUserIdAndConcertIdAndStatus(UUID userId, int concertId, ReservationTokenStatus status) {
-        return jpaRepository.findByUserIdAndConcertIdAndStatus(userId, concertId, status);
+    public List<ReservationToken> findByStatusAndExpiredAtBefore(ReservationTokenStatus status, LocalDateTime expiredAt) {
+        return jpaRepository.findByStatusAndExpiredAtBefore(status, expiredAt);
     }
 
     @Override

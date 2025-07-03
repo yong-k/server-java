@@ -1,21 +1,21 @@
 -------------------- 테이블 생성
 DROP TABLE IF EXISTS `REFRESH_TOKEN`;
 CREATE TABLE `REFRESH_TOKEN` (
-     `id`			INT 			NOT NULL	AUTO_INCREMENT PRIMARY KEY,
+     `id`			INT 			NOT NULL	    AUTO_INCREMENT PRIMARY KEY,
      `user_id`		BINARY(16)		NOT NULL,
-     `token`		VARCHAR(600)	NULL,
-     `issued_at`	TIMESTAMP 		NULL		DEFAULT current_timestamp,
+     `token`		VARCHAR(600)	NOT NULL,
+     `issued_at`	TIMESTAMP 		NOT NULL		DEFAULT current_timestamp,
      `expired_at`	TIMESTAMP 		NULL
 );
 
 DROP TABLE IF EXISTS `RESERVATION_TOKEN`;
 CREATE TABLE `RESERVATION_TOKEN` (
-     `id`					BINARY(16)		NOT NULL	PRIMARY KEY,
+     `id`					BINARY(16)		NOT NULL	    PRIMARY KEY,
      `user_id`				BINARY(16)		NOT NULL,
-     `concert_id`	        INT				NOT NULL,
-     `order`				INT				NULL,
-     `status`				VARCHAR(20)		NULL		COMMENT 'WAITING,READY,EXPIRED',
-     `issued_at`			TIMESTAMP		NULL		DEFAULT current_timestamp,
+     `status`				VARCHAR(20)		NOT NULL		COMMENT 'WAITING, ALLOWED, TIMEOUT, COMPLETED',
+     `order`				INT				NOT NULL,
+     `issued_at`			TIMESTAMP		NOT NULL		DEFAULT current_timestamp,
+     `updated_at`			TIMESTAMP		NOT NULL		DEFAULT current_timestamp,
      `expired_at`			TIMESTAMP		NULL
 );
 
@@ -88,7 +88,7 @@ CREATE TABLE `USER` (
     `point`			INT				NOT NULL	DEFAULT 0,
     `role`			VARCHAR(20)		NOT NULL	DEFAULT 'USER'	COMMENT 'USER,ADMIN',
     `created_at`	TIMESTAMP		NOT NULL	DEFAULT current_timestamp,
-    `updated_at`	TIMESTAMP		NULL		DEFAULT current_timestamp
+    `updated_at`	TIMESTAMP		NOT NULL		DEFAULT current_timestamp
 );
 
 
@@ -129,8 +129,7 @@ ALTER TABLE `USER` ADD CONSTRAINT `UK_USER_EMAIL` UNIQUE (`email`);
 
 
 -- RESERVATION_TOKEN
-ALTER TABLE `RESERVATION_TOKEN` ADD INDEX `IDX_RESERVATION_CONCERT_STATUS_ORDER` (`concert_id`, `status`, `order`);
+ALTER TABLE `RESERVATION_TOKEN` ADD INDEX `IDX_RESERVATION_STATUS_ORDER` (`status`, `order`);
 ALTER TABLE `RESERVATION_TOKEN` ADD CONSTRAINT `FK_RESERVATION_TOKEN_USER_ID` FOREIGN KEY (`user_id`) REFERENCES `USER` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE `RESERVATION_TOKEN` ADD CONSTRAINT `FK_RESERVATION_TOKEN_CONCERT_ID` FOREIGN KEY (`concert_id`) REFERENCES `CONCERT` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 

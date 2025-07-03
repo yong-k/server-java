@@ -6,10 +6,10 @@ import java.util.UUID;
 
 public interface ReservationUseCase {
 
-    ReservationTokenRespDto issueToken(ReservationTokenReqDto dto);
+    ReservationTokenRespDto issueToken(UUID userId);
 
-    SeatReservationRespDto reserveSeat(SeatReservationReqDto dto);
+    SeatReservationRespDto reserveSeat(UUID tokenId, SeatReservationReqDto dto);
 
-    PaymentRespDto pay(PaymentReqDto dto);
+    PaymentRespDto pay(UUID tokenId, PaymentReqDto dto);
 
 }

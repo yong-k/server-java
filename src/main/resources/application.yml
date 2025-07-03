@@ -32,6 +32,20 @@ spring:
   sql:
     init:
       mode: always
+  data:
+    redis:
+      host: redis
+      port: 6379
 
 server:
-  port: 8081
+  port: 8082
+
+reservation:
+  seat-status:
+    scheduler-interval-ms: 60000
+    temp-reserved-to-expired-minutes: 5
+    expired-to-hold-minutes: 1
+    hold-to-available-minutes: 3
+  token:
+    scheduler-interval-ms: 60000
+    allowed-to-timeout-minutes: 10

@@ -10,6 +10,7 @@ import kr.hhplus.be.server.concert.repository.ConcertRepository;
 import kr.hhplus.be.server.concert.repository.ConcertScheduleRepository;
 import kr.hhplus.be.server.concert.repository.SeatRepository;
 import kr.hhplus.be.server.reservation.application.port.out.ReservationTokenRepository;
+import kr.hhplus.be.server.reservation.config.SeatStatusProperties;
 import kr.hhplus.be.server.reservation.domain.ReservationToken;
 import kr.hhplus.be.server.reservation.domain.ReservationTokenStatus;
 import kr.hhplus.be.server.reservation.dto.PaymentReqDto;
@@ -35,26 +36,24 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
-
     @Autowired
     private UserRepository userRepository;
-
     @Autowired
     private ConcertRepository concertRepository;
-
     @Autowired
     private ConcertScheduleRepository concertScheduleRepository;
-
     @Autowired
     private SeatRepository seatRepository;
-
     @Autowired
     private ReservationTokenRepository reservationTokenRepository;
+    @Autowired
+    private SeatStatusProperties seatStatusProperties;
 
     private UUID userId;
     private Concert concert;
     private ConcertSchedule schedule;
     private Seat seat;
+    private UUID allowedTokenId;
 
     @BeforeEach
     void setup() {
@@ -73,8 +72,13 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
         schedule = concertScheduleRepository.save(new ConcertSchedule(null, concert, LocalDateTime.now().plusDays(3)));
         seat = seatRepository.save(new Seat(null, schedule, 1, 50_000, null, SeatStatus.AVAILABLE, null, null));
 
-        // 대기열 토큰 발급 (READY)
-        reservationTokenRepository.save(new ReservationToken(UUID.randomUUID(), userId, concert.getId(), 1, ReservationTokenStatus.READY, LocalDateTime.now(), null));
+        // ALLOWED 상태의 대기열토큰 생성 (테스트용)
+        allowedTokenId = UUID.randomUUID();
+        reservationTokenRepository.save(ReservationToken.builder()
+                .id(allowedTokenId)
+                .userId(UUID.randomUUID())
+                .status(ReservationTokenStatus.ALLOWED)
+                .build());
     }
 
     @Test
@@ -82,7 +86,7 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
         SeatReservationReqDto dto = new SeatReservationReqDto(seat.getId(), userId);
 
         mockMvc.perform(post("/api/v1/reservation")
-                        .header("X-USER-ID", userId)
+                        .header("X-TOKEN-ID", allowedTokenId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(asJsonString(dto)))
                 .andExpect(status().isCreated())
@@ -92,13 +96,13 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void 예약_실패_이미예약됨() throws Exception {
-        seat.reserve(userId);
+        seat.reserve(userId, seatStatusProperties.getTempReservedToExpiredMinutes());
         seatRepository.save(seat);
 
         SeatReservationReqDto dto = new SeatReservationReqDto(seat.getId(), userId);
 
         mockMvc.perform(post("/api/v1/reservation")
-                        .header("X-USER-ID", userId)
+                        .header("X-TOKEN-ID", allowedTokenId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(asJsonString(dto)))
                 .andExpect(status().isBadRequest())
@@ -107,13 +111,13 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
 
     @Test
     void 결제_성공() throws Exception {
-        seat.reserve(userId);
+        seat.reserve(userId, seatStatusProperties.getTempReservedToExpiredMinutes());
         seatRepository.save(seat);
 
         PaymentReqDto dto = new PaymentReqDto(seat.getId(), userId);
 
         mockMvc.perform(post("/api/v1/payment")
-                        .header("X-USER-ID", userId)
+                        .header("X-TOKEN-ID", allowedTokenId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(asJsonString(dto)))
                 .andExpect(status().isCreated())
@@ -125,13 +129,13 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
     @Test
     void 결제_실패_포인트부족() throws Exception {
         userRepository.save(new User(userId, 10));
-        seat.reserve(userId);
+        seat.reserve(userId, seatStatusProperties.getTempReservedToExpiredMinutes());
         seatRepository.save(seat);
 
         PaymentReqDto dto = new PaymentReqDto(seat.getId(), userId);
 
         mockMvc.perform(post("/api/v1/payment")
-                        .header("X-USER-ID", userId)
+                        .header("X-TOKEN-ID", allowedTokenId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(asJsonString(dto)))
                 .andExpect(status().isBadRequest())
@@ -145,7 +149,7 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
         PaymentReqDto dto = new PaymentReqDto(seat.getId(), userId);
 
         mockMvc.perform(post("/api/v1/payment")
-                        .header("X-USER-ID", userId)
+                        .header("X-TOKEN-ID", allowedTokenId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(asJsonString(dto)))
                 .andExpect(status().isBadRequest())
@@ -160,7 +164,7 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
         PaymentReqDto dto = new PaymentReqDto(seat.getId(), userId);
 
         mockMvc.perform(post("/api/v1/payment")
-                        .header("X-USER-ID", userId)
+                        .header("X-TOKEN-ID", allowedTokenId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(asJsonString(dto)))
                 .andExpect(status().isBadRequest())

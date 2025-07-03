@@ -39,12 +39,18 @@ dependencies {
     // DB
 	runtimeOnly("com.mysql:mysql-connector-j")
 
+	// Redis
+	implementation("org.springframework.boot:spring-boot-starter-data-redis")
+
 	// lombok
 	compileOnly("org.projectlombok:lombok")
 	annotationProcessor("org.projectlombok:lombok")
 
 	// Guava 추가 (컴파일만 있으면 충분)
 	implementation("com.google.guava:guava")
+
+	// retry
+	implementation("org.springframework.retry:spring-retry")
 
     // Test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
