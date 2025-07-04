@@ -69,7 +69,7 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
 
         // 콘서트 + 스케줄 + 좌석
         concert = concertRepository.save(new Concert(null, "concert_A"));
-        schedule = concertScheduleRepository.save(new ConcertSchedule(null, concert, LocalDateTime.now().plusDays(3)));
+        schedule = concertScheduleRepository.save(new ConcertSchedule(null, concert, LocalDateTime.now().plusDays(3), 50));
         seat = seatRepository.save(new Seat(null, schedule, 1, 50_000, null, SeatStatus.AVAILABLE, null, null));
 
         // ALLOWED 상태의 대기열토큰 생성 (테스트용)

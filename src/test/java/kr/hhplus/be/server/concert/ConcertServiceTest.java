@@ -58,8 +58,8 @@ class ConcertServiceTest {
         // given
         int concertId = 1;
         List<ConcertScheduleRespDto> expected = List.of(
-                new ConcertScheduleRespDto(1, LocalDateTime.of(2025, 6, 6, 18, 0), 30L),
-                new ConcertScheduleRespDto(2, LocalDateTime.of(2025, 6, 8, 18, 0), 0L)
+                new ConcertScheduleRespDto(1, LocalDateTime.of(2025, 6, 6, 18, 0), 30L, 50),
+                new ConcertScheduleRespDto(2, LocalDateTime.of(2025, 6, 8, 18, 0), 0L, 50)
         );
         when(concertScheduleRepository.findSchedulesWithRemainingSeats(concertId)).thenReturn(expected);
 

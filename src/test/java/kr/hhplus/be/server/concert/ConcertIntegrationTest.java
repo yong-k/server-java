@@ -68,8 +68,8 @@ public class ConcertIntegrationTest extends BaseIntegrationTest {
         testConcert = concertRepository.save(new Concert(null, "concert_A"));
 
         // 콘서트 일정 2개
-        schedule1 = concertScheduleRepository.save(new ConcertSchedule(null, testConcert, LocalDateTime.now().plusDays(3)));
-        schedule2 = concertScheduleRepository.save(new ConcertSchedule(null, testConcert, LocalDateTime.now().plusDays(4)));
+        schedule1 = concertScheduleRepository.save(new ConcertSchedule(null, testConcert, LocalDateTime.now().plusDays(3), 50));
+        schedule2 = concertScheduleRepository.save(new ConcertSchedule(null, testConcert, LocalDateTime.now().plusDays(4), 50));
 
         // 스케줄1 : 좌석 5개 모두 AVAILABLE
         for (int i = 1; i <= 5; i++) {

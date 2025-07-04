@@ -15,11 +15,11 @@ INSERT INTO CONCERT (id, name)
 VALUES
     (1, 'Concert_01'),
     (2, 'Concert_02');
-INSERT INTO CONCERT_SCHEDULE (id, concert_id, schedule_at)
+INSERT INTO CONCERT_SCHEDULE (id, concert_id, schedule_at, total_seats)
 VALUES
-    (1, 1, CONVERT_TZ('2025-07-10 19:00:00', 'Asia/Seoul', 'UTC')),
-    (2, 1,  CONVERT_TZ('2025-07-11 20:00:00', 'Asia/Seoul', 'UTC')),
-    (3, 2,  CONVERT_TZ('2025-07-06 11:51:00', 'Asia/Seoul', 'UTC'));
+    (1, 1, CONVERT_TZ('2025-07-10 19:00:00', 'Asia/Seoul', 'UTC'), 50),
+    (2, 1,  CONVERT_TZ('2025-07-11 20:00:00', 'Asia/Seoul', 'UTC'), 50),
+    (3, 2,  CONVERT_TZ('2025-07-06 11:51:00', 'Asia/Seoul', 'UTC'), 50);
 -- schedule_id = 1, seat number 1~50
 INSERT INTO SEAT (id, concert_schedule_id, number, price, status)
 VALUES

@@ -23,4 +23,6 @@ public class ConcertSchedule {
     private Concert concert;
 
     private LocalDateTime scheduleAt;
+
+    private Integer totalSeats;
 }
