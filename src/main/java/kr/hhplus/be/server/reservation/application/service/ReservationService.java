@@ -149,8 +149,11 @@ public class ReservationService implements ReservationUseCase {
                     // 좌석 상태 변경
                     seat.pay();     // Dirty Checking OK
 
-                    // 결제완료 후, 에매율 랭킹 Redis 갱신
-                    redisReservationRankingManager.updateDailyReservationRate(seat.getConcertSchedule().getId());
+                    // 결제완료 후, 에매율 랭킹 Redis 갱신 (일간, 주간, 월간)
+                    int scheduleId = seat.getConcertSchedule().getId();
+                    redisReservationRankingManager.updateDailyReservationRate(scheduleId);
+                    redisReservationRankingManager.updateWeeklyReservationRate(scheduleId);
+                    redisReservationRankingManager.updateMonthlyReservationRate(scheduleId);
 
                     // 대기열토큰 만료 처리 (JPA dirty checking)
                     reservationTokenRepository.findByIdAndStatus(tokenId, ReservationTokenStatus.ALLOWED)
