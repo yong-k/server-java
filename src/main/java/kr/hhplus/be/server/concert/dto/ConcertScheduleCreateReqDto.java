@@ -13,4 +13,7 @@ public class ConcertScheduleCreateReqDto {
 
     @NotNull(message = "콘서트일시는 필수입니다")
     private LocalDateTime scheduleAt;
+
+    @NotNull(message = "좌석수는 필수입니다")
+    private Integer totalSeats;
 }

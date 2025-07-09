@@ -12,7 +12,7 @@ public interface ConcertScheduleRepository extends JpaRepository<ConcertSchedule
 
     @Query("""
         SELECT new kr.hhplus.be.server.concert.dto.ConcertScheduleRespDto(
-            cs.id, cs.scheduleAt, COUNT(CASE WHEN s.status = 'AVAILABLE' THEN 1 END)
+            cs.id, cs.scheduleAt, COUNT(CASE WHEN s.status = 'AVAILABLE' THEN 1 END), cs.totalSeats
         )
         FROM ConcertSchedule cs JOIN Seat s 
             ON s.concertSchedule.id = cs.id

@@ -67,7 +67,7 @@ public class ReservationConcurrencyTest extends BaseIntegrationTest {
         concertRepository.deleteAll();
 
         Concert concert = concertRepository.save(new Concert(null, "concert_A"));
-        schedule = concertScheduleRepository.save(new ConcertSchedule(null, concert, LocalDateTime.now().plusDays(3)));
+        schedule = concertScheduleRepository.save(new ConcertSchedule(null, concert, LocalDateTime.now().plusDays(3), 50));
         seat = seatRepository.save(new Seat(null, schedule, 1, 100, null, SeatStatus.AVAILABLE, null, null));
 
         // ALLOWED 상태의 대기열토큰 생성 (테스트용)

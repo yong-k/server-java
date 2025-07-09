@@ -65,7 +65,7 @@ public class SeatSchedulerConcurrencyTest extends BaseIntegrationTest {
     @BeforeEach
     void setup() {
         Concert concert = concertRepository.save(new Concert(null, "test"));
-        ConcertSchedule schedule = concertScheduleRepository.save(new ConcertSchedule(null, concert, LocalDateTime.now().plusDays(1)));
+        ConcertSchedule schedule = concertScheduleRepository.save(new ConcertSchedule(null, concert, LocalDateTime.now().plusDays(1), 50));
         seat = seatRepository.save(new Seat(null, schedule, 1, 10_000, null, SeatStatus.AVAILABLE, null, null));
 
         userId = UUID.randomUUID();

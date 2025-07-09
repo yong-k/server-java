@@ -75,10 +75,12 @@ public class ConcertService {
         ConcertSchedule schedule = concertScheduleRepository.save(ConcertSchedule.builder()
                 .concert(concert)
                 .scheduleAt(dto.getScheduleAt())
+                .totalSeats(dto.getTotalSeats())
                 .build());
 
-        // 좌석 50개 생성
-        List<Seat> seats = IntStream.rangeClosed(1, 50)
+        // 좌석 생성
+        int totalSeats = dto.getTotalSeats();
+        List<Seat> seats = IntStream.rangeClosed(1, totalSeats)
                 .mapToObj(i -> Seat.builder()
                         .concertSchedule(schedule)
                         .number(i)
@@ -92,6 +94,7 @@ public class ConcertService {
                 .concertId(concert.getId())
                 .scheduleId(schedule.getId())
                 .scheduleAt(schedule.getScheduleAt())
+                .totalSeats(totalSeats)
                 .build();
     }
 }

@@ -15,6 +15,7 @@ import kr.hhplus.be.server.reservation.exception.InvalidSeatStatusException;
 import kr.hhplus.be.server.reservation.exception.InvalidSeatUserStatusException;
 import kr.hhplus.be.server.reservation.exception.RedisDistributedLockException;
 import kr.hhplus.be.server.reservation.infrastructure.external.RedisDistributedLockManager;
+import kr.hhplus.be.server.reservation.infrastructure.external.RedisReservationRankingManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +36,7 @@ public class ReservationService implements ReservationUseCase {
     private final ReservationTokenValidator reservationTokenValidator;
     private final SeatStatusProperties seatStatusProperties;
     private final RedisDistributedLockManager redisDistributedLockManager;
+    private final RedisReservationRankingManager redisReservationRankingManager;
 
     /**
      * 새로고침했을 경우, 대기순번 새로 부여
@@ -46,7 +48,8 @@ public class ReservationService implements ReservationUseCase {
                 .id(UUID.randomUUID())
                 .userId(userId)
                 .order(0)   // 나중에 대기열구현 및 redis 도입하면서 변경 예정
-                .status(ReservationTokenStatus.WAITING)
+                .status(ReservationTokenStatus.ALLOWED)     // 대기열 구현 후, WAITING으로 변경하기
+//                .status(ReservationTokenStatus.WAITING)
                 .build();
 
         return ReservationTokenRespDto.from(reservationTokenRepository.save(token));
@@ -145,6 +148,12 @@ public class ReservationService implements ReservationUseCase {
 
                     // 좌석 상태 변경
                     seat.pay();     // Dirty Checking OK
+
+                    // 결제완료 후, 에매율 랭킹 Redis 갱신 (일간, 주간, 월간)
+                    int scheduleId = seat.getConcertSchedule().getId();
+                    redisReservationRankingManager.updateDailyReservationRate(scheduleId);
+                    redisReservationRankingManager.updateWeeklyReservationRate(scheduleId);
+                    redisReservationRankingManager.updateMonthlyReservationRate(scheduleId);
 
                     // 대기열토큰 만료 처리 (JPA dirty checking)
                     reservationTokenRepository.findByIdAndStatus(tokenId, ReservationTokenStatus.ALLOWED)
