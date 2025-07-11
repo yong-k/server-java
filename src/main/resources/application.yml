@@ -49,3 +49,8 @@ reservation:
   token:
     scheduler-interval-ms: 60000
     allowed-to-timeout-minutes: 10
+  ranking:
+    ttl-days:
+      daily: 1
+      weekly: 7
+      monthly: 31
