@@ -41,18 +41,12 @@ public class ReservationService implements ReservationUseCase {
 
     private final PaymentEventPublisher paymentEventPublisher;
 
-    /**
-     * 새로고침했을 경우, 대기순번 새로 부여
-     * 기존 토큰 무시하고 새로 발급
-     */
     @Override
     public ReservationTokenRespDto issueToken(UUID userId) {
         ReservationToken token = ReservationToken.builder()
                 .id(UUID.randomUUID())
                 .userId(userId)
-                .order(0)   // 나중에 대기열구현 및 redis 도입하면서 변경 예정
-                .status(ReservationTokenStatus.ALLOWED)     // 대기열 구현 후, WAITING으로 변경하기
-//                .status(ReservationTokenStatus.WAITING)
+                .status(ReservationTokenStatus.WAITING)
                 .build();
 
         return ReservationTokenRespDto.from(reservationTokenRepository.save(token));

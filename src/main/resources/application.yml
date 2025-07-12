@@ -54,3 +54,7 @@ reservation:
       daily: 1
       weekly: 7
       monthly: 31
+  queue:
+    allowed-limit: 1000
+    batch-allow-limit: 200
+    scheduler-interval-ms: 50000
