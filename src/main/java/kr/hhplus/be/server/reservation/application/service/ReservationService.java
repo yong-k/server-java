@@ -4,6 +4,7 @@ import kr.hhplus.be.server.common.exception.DataNotFoundException;
 import kr.hhplus.be.server.concert.domain.Seat;
 import kr.hhplus.be.server.concert.repository.SeatRepository;
 import kr.hhplus.be.server.point.PointService;
+import kr.hhplus.be.server.reservation.application.event.PaymentEventPublisher;
 import kr.hhplus.be.server.reservation.application.port.in.PayHistoryUseCase;
 import kr.hhplus.be.server.reservation.application.port.in.ReservationUseCase;
 import kr.hhplus.be.server.reservation.application.port.out.ReservationTokenRepository;
@@ -15,14 +16,15 @@ import kr.hhplus.be.server.reservation.exception.InvalidSeatStatusException;
 import kr.hhplus.be.server.reservation.exception.InvalidSeatUserStatusException;
 import kr.hhplus.be.server.reservation.exception.RedisDistributedLockException;
 import kr.hhplus.be.server.reservation.infrastructure.external.RedisDistributedLockManager;
-import kr.hhplus.be.server.reservation.infrastructure.external.RedisReservationRankingManager;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ReservationService implements ReservationUseCase {
@@ -36,20 +38,15 @@ public class ReservationService implements ReservationUseCase {
     private final ReservationTokenValidator reservationTokenValidator;
     private final SeatStatusProperties seatStatusProperties;
     private final RedisDistributedLockManager redisDistributedLockManager;
-    private final RedisReservationRankingManager redisReservationRankingManager;
 
-    /**
-     * 새로고침했을 경우, 대기순번 새로 부여
-     * 기존 토큰 무시하고 새로 발급
-     */
+    private final PaymentEventPublisher paymentEventPublisher;
+
     @Override
     public ReservationTokenRespDto issueToken(UUID userId) {
         ReservationToken token = ReservationToken.builder()
                 .id(UUID.randomUUID())
                 .userId(userId)
-                .order(0)   // 나중에 대기열구현 및 redis 도입하면서 변경 예정
-                .status(ReservationTokenStatus.ALLOWED)     // 대기열 구현 후, WAITING으로 변경하기
-//                .status(ReservationTokenStatus.WAITING)
+                .status(ReservationTokenStatus.WAITING)
                 .build();
 
         return ReservationTokenRespDto.from(reservationTokenRepository.save(token));
@@ -63,7 +60,7 @@ public class ReservationService implements ReservationUseCase {
 
         String lockKey = "lock:seat:" + seatId;
         String lockValue = redisDistributedLockManager.generateUniqueValue();
-        Duration expire = Duration.ofSeconds(3);    // 락의 만료 시간(TTL)
+        Duration expire = Duration.ofMillis(800);    // 락의 만료 시간(TTL)
 
         int maxAttempts = 3;
         int attempt = 0;
@@ -71,6 +68,7 @@ public class ReservationService implements ReservationUseCase {
         while (true) {
             boolean locked = redisDistributedLockManager.lock(lockKey, lockValue, expire);
             if (locked) {
+                long start = System.currentTimeMillis();
                 try {
                     // JVM 락은 사용하지않고 DB락만 사용하여 예약 가능 여부 확인 → 상태 변경 → 저장까지 원자적으로 실행
                     Seat seat = seatRepository.findByIdForUpdate(seatId)
@@ -91,6 +89,7 @@ public class ReservationService implements ReservationUseCase {
                             .build();
                 } finally {
                     redisDistributedLockManager.unlock(lockKey, lockValue);
+                    log.info("reserveSeat-작업 소요 시간: {}ms", System.currentTimeMillis() - start);
                 }
             }
 
@@ -116,7 +115,7 @@ public class ReservationService implements ReservationUseCase {
 
         String lockKey = "lock:seat:" + seatId;
         String lockValue = redisDistributedLockManager.generateUniqueValue();
-        Duration expire = Duration.ofSeconds(3);
+        Duration expire = Duration.ofSeconds(1);
 
         int maxAttempts = 3;
         int attempt = 0;
@@ -124,6 +123,7 @@ public class ReservationService implements ReservationUseCase {
         while (true) {
             boolean locked = redisDistributedLockManager.lock(lockKey, lockValue, expire);
             if (locked) {
+                long start = System.currentTimeMillis();
                 try {
                     Seat seat = seatRepository.findByIdForUpdate(seatId)
                             .orElseThrow(() -> new DataNotFoundException("좌석이 존재하지 않습니다: seatId = " + seatId));
@@ -131,6 +131,7 @@ public class ReservationService implements ReservationUseCase {
                     // 대기열토큰 검증
                     reservationTokenValidator.validateToken(tokenId);
 
+                    // 좌석 결제 가능 여부 검증
                     // 예외 상황에서도 결제 실패 이력을 반드시 남기기 위한 REQUIRES_NEW 트랜잭션 분리 [payHistoryUseCase.savePayHistory()]
                     try {
                         seat.validatePayable(userId);
@@ -149,18 +150,8 @@ public class ReservationService implements ReservationUseCase {
                     // 좌석 상태 변경
                     seat.pay();     // Dirty Checking OK
 
-                    // 결제완료 후, 에매율 랭킹 Redis 갱신 (일간, 주간, 월간)
-                    int scheduleId = seat.getConcertSchedule().getId();
-                    redisReservationRankingManager.updateDailyReservationRate(scheduleId);
-                    redisReservationRankingManager.updateWeeklyReservationRate(scheduleId);
-                    redisReservationRankingManager.updateMonthlyReservationRate(scheduleId);
-
-                    // 대기열토큰 만료 처리 (JPA dirty checking)
-                    reservationTokenRepository.findByIdAndStatus(tokenId, ReservationTokenStatus.ALLOWED)
-                            .ifPresent(ReservationToken::complete);
-
-                    // 결제내역 저장 [여기는 예외 생기면 롤백되어야 함 => REQUIRED]
-                    payHistoryUseCase.saveSuccessHistory(seat, userId, PaymentStatus.SUCCESS, null);
+                    // 결제 성공 이벤트 발행
+                    paymentEventPublisher.success(new PaymentSuccessEvent(seat.getConcertSchedule().getId(), userId, tokenId, seat));
 
                     return PaymentRespDto.builder()
                             .userId(userId)
@@ -171,6 +162,7 @@ public class ReservationService implements ReservationUseCase {
                             .build();
                 } finally {
                     redisDistributedLockManager.unlock(lockKey, lockValue);
+                    log.info("pay-작업 소요 시간: {}ms", System.currentTimeMillis() - start);
                 }
             }
 

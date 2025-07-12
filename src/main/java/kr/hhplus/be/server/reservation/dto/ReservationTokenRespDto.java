@@ -18,7 +18,6 @@ public class ReservationTokenRespDto {
     private UUID id;
     private UUID userId;
     private int concertId;
-    private int order;
     private ReservationTokenStatus status;
     private LocalDateTime issuedAt;
     private LocalDateTime updatedAt;
@@ -28,7 +27,6 @@ public class ReservationTokenRespDto {
         return ReservationTokenRespDto.builder()
                 .id(token.getId())
                 .userId(token.getUserId())
-                .order(token.getOrder())
                 .status(token.getStatus())
                 .issuedAt(token.getIssuedAt())
                 .updatedAt(token.getUpdatedAt())

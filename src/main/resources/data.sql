@@ -161,7 +161,7 @@ SET user_id = UNHEX(REPLACE('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '-', '')),
     reserved_at = NOW()
 WHERE id = 1;
 --5) RESERVATION_TOKEN (expired)
-INSERT INTO RESERVATION_TOKEN (id, user_id, `order`, status, issued_at, updated_at, expired_at)
+INSERT INTO RESERVATION_TOKEN (id, user_id, status, issued_at, updated_at, expired_at)
 VALUES (UNHEX(REPLACE('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '-', '')),
         UNHEX(REPLACE('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '-', '')),
-        1, 'COMPLETED', NOW(), NOW(), NOW());
+        'COMPLETED', NOW(), NOW(), NOW());

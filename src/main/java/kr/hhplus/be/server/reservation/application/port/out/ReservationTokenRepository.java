@@ -11,9 +11,15 @@ import java.util.UUID;
 public interface ReservationTokenRepository {
     ReservationToken save(ReservationToken token);
 
+    Optional<ReservationToken> findById(UUID tokenId);
+
     Optional<ReservationToken> findByIdAndStatus(UUID tokenId, ReservationTokenStatus status);
 
     List<ReservationToken> findByStatusAndExpiredAtBefore(ReservationTokenStatus status, LocalDateTime expiredAt);
+
+    List<ReservationToken> findAllById(List<UUID> tokenIds);
+
+    long countByStatus(ReservationTokenStatus status);
 
     void deleteAll();
 }

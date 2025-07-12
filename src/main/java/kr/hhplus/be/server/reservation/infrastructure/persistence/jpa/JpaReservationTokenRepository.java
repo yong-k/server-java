@@ -14,4 +14,5 @@ public interface JpaReservationTokenRepository extends JpaRepository<Reservation
 
     List<ReservationToken> findByStatusAndExpiredAtBefore(ReservationTokenStatus status, LocalDateTime expiredAt);
 
+    long countByStatus(ReservationTokenStatus status);
 }

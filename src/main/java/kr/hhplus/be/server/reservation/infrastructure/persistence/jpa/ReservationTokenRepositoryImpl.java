@@ -23,6 +23,11 @@ public class ReservationTokenRepositoryImpl implements ReservationTokenRepositor
     }
 
     @Override
+    public Optional<ReservationToken> findById(UUID tokenId) {
+        return jpaRepository.findById(tokenId);
+    }
+
+    @Override
     public Optional<ReservationToken> findByIdAndStatus(UUID tokenId, ReservationTokenStatus status) {
         return jpaRepository.findByIdAndStatus(tokenId, status);
     }
@@ -30,6 +35,16 @@ public class ReservationTokenRepositoryImpl implements ReservationTokenRepositor
     @Override
     public List<ReservationToken> findByStatusAndExpiredAtBefore(ReservationTokenStatus status, LocalDateTime expiredAt) {
         return jpaRepository.findByStatusAndExpiredAtBefore(status, expiredAt);
+    }
+
+    @Override
+    public List<ReservationToken> findAllById(List<UUID> tokenIds) {
+        return jpaRepository.findAllById(tokenIds);
+    }
+
+    @Override
+    public long countByStatus(ReservationTokenStatus status) {
+        return jpaRepository.countByStatus(status);
     }
 
     @Override

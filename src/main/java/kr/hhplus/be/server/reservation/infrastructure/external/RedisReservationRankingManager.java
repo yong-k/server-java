@@ -5,6 +5,7 @@ import kr.hhplus.be.server.concert.domain.ConcertSchedule;
 import kr.hhplus.be.server.concert.domain.SeatStatus;
 import kr.hhplus.be.server.concert.repository.ConcertScheduleRepository;
 import kr.hhplus.be.server.concert.repository.SeatRepository;
+import kr.hhplus.be.server.reservation.config.RankingTtlProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
@@ -23,6 +24,7 @@ public class RedisReservationRankingManager {
     private final StringRedisTemplate redisTemplate;
     private final ConcertScheduleRepository concertScheduleRepository;
     private final SeatRepository seatRepository;
+    private final RankingTtlProperties ttlProperties;
 
     // 예매율을 계산하여 Redis에 갱신
     public void updateReservationRateRanking(int concertScheduleId, String key, Duration ttl) {
@@ -46,7 +48,7 @@ public class RedisReservationRankingManager {
     // daily ranking (concert:ranking:daily:20250705)
     public void updateDailyReservationRate(int concertScheduleId) {
         String key = "concert:ranking:daily:" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
-        updateReservationRateRanking(concertScheduleId, key, Duration.ofDays(1));
+        updateReservationRateRanking(concertScheduleId, key, Duration.ofDays(ttlProperties.getDaily()));
     }
 
     // weekly ranking (concert:ranking:weekly:2025W27)
@@ -56,13 +58,13 @@ public class RedisReservationRankingManager {
         int week = now.get(weekFields.weekOfWeekBasedYear());
         int year = now.get(weekFields.weekBasedYear());
         String key = String.format("concert:ranking:weekly:%dW%d", year, week);
-        updateReservationRateRanking(concertScheduleId, key, Duration.ofDays(7));
+        updateReservationRateRanking(concertScheduleId, key, Duration.ofDays(ttlProperties.getWeekly()));
     }
 
     // monthly ranking (concert:ranking:monthly:202507)
     public void updateMonthlyReservationRate(int concertScheduleId) {
         YearMonth ym = YearMonth.now();     // 2025-07
         String key = "concert:ranking:monthly:" + ym.format(DateTimeFormatter.ofPattern("yyyyMM"));     // 202507
-        updateReservationRateRanking(concertScheduleId, key, Duration.ofDays(31));
+        updateReservationRateRanking(concertScheduleId, key, Duration.ofDays(ttlProperties.getMonthly()));
     }
 }
