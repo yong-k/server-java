@@ -28,14 +28,12 @@ public class PaymentSuccessKafkaConsumer {
     @KafkaListener(topics = "payment_success", groupId = "pay-consumer-group")
     public void consume(PaymentSuccessMessage message) {
 
-        log.info("1) 랭킹 start");
         // 1) 예매율 랭킹 Redis 갱신 (일간, 주간, 월간)
         int scheduleId = message.getConcertScheduleId();
         redisReservationRankingManager.updateDailyReservationRate(scheduleId);
         redisReservationRankingManager.updateWeeklyReservationRate(scheduleId);
         redisReservationRankingManager.updateMonthlyReservationRate(scheduleId);
 
-        log.info("2) 토큰 결제완료 처리");
         // 2) 대기열토큰 결제완료 처리
         reservationTokenRepository.findByIdAndStatus(message.getTokenId(), ReservationTokenStatus.ALLOWED)
                 .ifPresent(token -> {
@@ -43,7 +41,6 @@ public class PaymentSuccessKafkaConsumer {
                     reservationTokenRepository.save(token);
                 });
 
-        log.info("3) 결제 성공내역 저장");
         // 3) 결제 성공 내역 저장
         Seat seat = seatRepository.findById(message.getSeatId())
                 .orElseThrow(() -> new DataNotFoundException("좌석이 존재하지 않습니다: seatId = " + message.getSeatId()));

@@ -4,7 +4,6 @@ import kr.hhplus.be.server.common.exception.DataNotFoundException;
 import kr.hhplus.be.server.concert.domain.Seat;
 import kr.hhplus.be.server.concert.repository.SeatRepository;
 import kr.hhplus.be.server.point.PointService;
-import kr.hhplus.be.server.reservation.application.event.PaymentEventPublisher;
 import kr.hhplus.be.server.reservation.application.port.in.PayHistoryUseCase;
 import kr.hhplus.be.server.reservation.application.port.in.ReservationUseCase;
 import kr.hhplus.be.server.reservation.application.port.out.ReservationTokenRepository;
