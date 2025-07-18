@@ -6,6 +6,7 @@ import kr.hhplus.be.server.concert.domain.Seat;
 import kr.hhplus.be.server.concert.domain.SeatStatus;
 import kr.hhplus.be.server.concert.repository.SeatRepository;
 import kr.hhplus.be.server.point.PointService;
+import kr.hhplus.be.server.reservation.application.event.PaymentEventPublisher;
 import kr.hhplus.be.server.reservation.application.port.in.PayHistoryUseCase;
 import kr.hhplus.be.server.reservation.application.port.out.ReservationTokenRepository;
 import kr.hhplus.be.server.reservation.application.service.ReservationService;
@@ -19,6 +20,7 @@ import kr.hhplus.be.server.reservation.dto.SeatReservationReqDto;
 import kr.hhplus.be.server.reservation.dto.SeatReservationRespDto;
 import kr.hhplus.be.server.reservation.exception.InvalidSeatStatusException;
 import kr.hhplus.be.server.reservation.exception.InvalidSeatUserStatusException;
+import kr.hhplus.be.server.reservation.infrastructure.external.RedisDistributedLockManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,6 +49,10 @@ class ReservationServiceTest {
     private ReservationTokenValidator reservationTokenValidator;
     @Mock
     private SeatStatusProperties seatStatusProperties;
+    @Mock
+    private RedisDistributedLockManager redisDistributedLockManager;
+    @Mock
+    private PaymentEventPublisher paymentEventPublisher;
 
     @InjectMocks
     private ReservationService reservationService;
@@ -84,6 +90,8 @@ class ReservationServiceTest {
                 .concertSchedule(schedule)
                 .build();
 
+        when(redisDistributedLockManager.generateUniqueValue()).thenReturn("unique-value");
+        when(redisDistributedLockManager.lock(eq("lock:seat:1"), eq("unique-value"), any())).thenReturn(true);
         when(seatRepository.findByIdForUpdate(seatId)).thenReturn(Optional.of(seat));
 
         SeatReservationReqDto dto = new SeatReservationReqDto(seatId, userId);
@@ -107,6 +115,8 @@ class ReservationServiceTest {
                 .concertSchedule(schedule)
                 .build();
 
+        when(redisDistributedLockManager.generateUniqueValue()).thenReturn("unique-value");
+        when(redisDistributedLockManager.lock(eq("lock:seat:1"), eq("unique-value"), any())).thenReturn(true);
         when(seatRepository.findByIdForUpdate(seatId)).thenReturn(Optional.of(seat));
 
         SeatReservationReqDto dto = new SeatReservationReqDto(seatId, userId);
@@ -132,12 +142,15 @@ class ReservationServiceTest {
 
         PaymentReqDto dto = new PaymentReqDto(seatId, userId);
 
-        when(seatRepository.findById(seatId)).thenReturn(Optional.of(seat));
+        when(redisDistributedLockManager.generateUniqueValue()).thenReturn("unique-value");
+        when(redisDistributedLockManager.lock(eq("lock:seat:1"), eq("unique-value"), any())).thenReturn(true);
+        when(seatRepository.findByIdForUpdate(seatId)).thenReturn(Optional.of(seat));
 
         // when
         PaymentRespDto actual = reservationService.pay(allowedTokenId, dto);
 
         // then
+        verify(redisDistributedLockManager).unlock("lock:seat:1", "unique-value");
         assertThat(actual.getSeatId()).isEqualTo(seatId);
         assertThat(actual.getUserId()).isEqualTo(userId);
         assertThat(actual.getAmount()).isEqualTo(price);
@@ -155,7 +168,9 @@ class ReservationServiceTest {
                 .concertSchedule(schedule)
                 .build();
 
-        when(seatRepository.findById(seatId)).thenReturn(Optional.of(seat));
+        when(redisDistributedLockManager.generateUniqueValue()).thenReturn("unique-value");
+        when(redisDistributedLockManager.lock(eq("lock:seat:1"), eq("unique-value"), any())).thenReturn(true);
+        when(seatRepository.findByIdForUpdate(seatId)).thenReturn(Optional.of(seat));
 
         PaymentReqDto dto = new PaymentReqDto(seatId, userId);
 
@@ -180,7 +195,9 @@ class ReservationServiceTest {
                 .concertSchedule(schedule)
                 .build();
 
-        when(seatRepository.findById(seatId)).thenReturn(Optional.of(seat));
+        when(redisDistributedLockManager.generateUniqueValue()).thenReturn("unique-value");
+        when(redisDistributedLockManager.lock(eq("lock:seat:1"), eq("unique-value"), any())).thenReturn(true);
+        when(seatRepository.findByIdForUpdate(seatId)).thenReturn(Optional.of(seat));
 
         PaymentReqDto dto = new PaymentReqDto(seatId, reqUserId);
 
