@@ -12,10 +12,12 @@ import kr.hhplus.be.server.reservation.application.validator.ReservationTokenVal
 import kr.hhplus.be.server.reservation.config.SeatStatusProperties;
 import kr.hhplus.be.server.reservation.domain.*;
 import kr.hhplus.be.server.reservation.dto.*;
+import kr.hhplus.be.server.reservation.dto.kafka.PaymentSuccessMessage;
 import kr.hhplus.be.server.reservation.exception.InvalidSeatStatusException;
 import kr.hhplus.be.server.reservation.exception.InvalidSeatUserStatusException;
 import kr.hhplus.be.server.reservation.exception.RedisDistributedLockException;
 import kr.hhplus.be.server.reservation.infrastructure.external.RedisDistributedLockManager;
+import kr.hhplus.be.server.reservation.infrastructure.kafka.PaymentSuccessKafkaProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -39,7 +41,8 @@ public class ReservationService implements ReservationUseCase {
     private final SeatStatusProperties seatStatusProperties;
     private final RedisDistributedLockManager redisDistributedLockManager;
 
-    private final PaymentEventPublisher paymentEventPublisher;
+    //    private final PaymentEventPublisher paymentEventPublisher;
+    private final PaymentSuccessKafkaProducer paymentSuccessKafkaProducer;
 
     @Override
     public ReservationTokenRespDto issueToken(UUID userId) {
@@ -150,8 +153,13 @@ public class ReservationService implements ReservationUseCase {
                     // 좌석 상태 변경
                     seat.pay();     // Dirty Checking OK
 
-                    // 결제 성공 이벤트 발행
-                    paymentEventPublisher.success(new PaymentSuccessEvent(seat.getConcertSchedule().getId(), userId, tokenId, seat));
+                    // (기존) Spring ApplicationEventPublisher 기반 결제 성공 이벤트 발행
+//                    paymentEventPublisher.success(new PaymentSuccessEvent(seat.getConcertSchedule().getId(), userId, tokenId, seat));
+
+                    // Kafka 결제 성공 메시지 발행
+                    paymentSuccessKafkaProducer.publish(new PaymentSuccessMessage(seat.getConcertSchedule().getId(), userId, tokenId, seatId));
+
+
 
                     return PaymentRespDto.builder()
                             .userId(userId)
