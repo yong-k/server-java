@@ -12,6 +12,8 @@ import java.util.UUID;
 public interface JpaReservationTokenRepository extends JpaRepository<ReservationToken, UUID> {
     Optional<ReservationToken> findByIdAndStatus(UUID tokenId, ReservationTokenStatus status);
 
+    List<ReservationToken> findByIdInAndStatus(List<UUID> tokenIds, ReservationTokenStatus status);
+
     List<ReservationToken> findByStatusAndExpiredAtBefore(ReservationTokenStatus status, LocalDateTime expiredAt);
 
     long countByStatus(ReservationTokenStatus status);

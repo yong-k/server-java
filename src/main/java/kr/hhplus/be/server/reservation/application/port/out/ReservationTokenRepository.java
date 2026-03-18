@@ -15,6 +15,8 @@ public interface ReservationTokenRepository {
 
     Optional<ReservationToken> findByIdAndStatus(UUID tokenId, ReservationTokenStatus status);
 
+    List<ReservationToken> findByIdInAndStatus(List<UUID> tokenIds, ReservationTokenStatus status);
+
     List<ReservationToken> findByStatusAndExpiredAtBefore(ReservationTokenStatus status, LocalDateTime expiredAt);
 
     List<ReservationToken> findAllById(List<UUID> tokenIds);

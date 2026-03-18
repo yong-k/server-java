@@ -15,7 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -54,7 +56,7 @@ public class ReservationTokenScheduler {
      * WAITING 상태 중 순번 상위권 토큰을 ALLOWED로 변경
      */
     @Transactional
-    @Scheduled(fixedDelayString = "${reservation.queue.scheduler-interval-ms:50000}")
+    @Scheduled(fixedDelayString = "${reservation.queue.scheduler-interval-ms:5000}")
     public void allowWaitingTokens() {
         retryTemplate.execute(context -> {
             // 대기열에 존재하는 WAITING 토큰 목록 조회 (한 번에 너무 많이 가져올 수 있으니, 제한 걸음)
@@ -66,16 +68,29 @@ public class ReservationTokenScheduler {
             int allowedLimit = reservationQueueProperties.getAllowedLimit();
             // 현재 ALLOWED 인원 수
             long allowedCount = reservationTokenRepository.countByStatus(ReservationTokenStatus.ALLOWED);
+            if (allowedCount >= allowedLimit) return null;
 
+            List<ReservationToken> tokens = reservationTokenRepository.findByIdInAndStatus(queue, ReservationTokenStatus.WAITING);
+
+            log.info("ALLOW 대상 조회: {}건, 현재 allowedCount: {}", tokens.size(), allowedCount);
+
+            // DB에서 조회 시, 순서가 보장되지 않기 때문에 queue 순서 기준으로 순회
+            Map<UUID, ReservationToken> tokenMap =
+                    tokens.stream().collect(Collectors.toMap(ReservationToken::getId, token -> token));
+
+            long allowedBefore = allowedCount;
             for (UUID tokenId : queue) {
                 if (allowedCount >= allowedLimit) break;
 
-                ReservationToken token = reservationTokenRepository.findById(tokenId).orElse(null);
-                if (token == null || token.getStatus() != ReservationTokenStatus.WAITING) continue;
+                ReservationToken token = tokenMap.get(tokenId);
+                if (token == null) continue;
 
                 token.allow(reservationTokenProperties.getAllowedToTimeoutMinutes());   // Dirty Checking OK
                 allowedCount++;
             }
+
+            log.info("ALLOW 처리 완료: {}건", allowedCount - allowedBefore);
+
             return null;
         }, context -> {
             log.error("대기열토큰 ALLOWED 처리 실패 - ReservationTokenScheduler 최대 재시도 횟수 초과");

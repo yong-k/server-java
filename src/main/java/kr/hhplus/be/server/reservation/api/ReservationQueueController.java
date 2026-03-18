@@ -16,7 +16,6 @@ import java.util.UUID;
 public class ReservationQueueController {
 
     private final ReservationEntryFacade reservationEntryFacade;
-    private final ReservationQueueUseCase reservationQueueUseCase;
 
     // 대기열 진입 요청 (토큰 발급 + 대기열 큐 진입 통합 처리)
     //--- X-USER-ID: 대기열토큰 발급 시, userId 필요. 아직 jwt 적용 전이라 header로 userId 값 보내서 테스트 진행중 (변경 예정)

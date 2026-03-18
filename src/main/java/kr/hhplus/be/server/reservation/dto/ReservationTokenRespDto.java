@@ -17,7 +17,6 @@ import java.util.UUID;
 public class ReservationTokenRespDto {
     private UUID id;
     private UUID userId;
-    private int concertId;
     private ReservationTokenStatus status;
     private LocalDateTime issuedAt;
     private LocalDateTime updatedAt;
