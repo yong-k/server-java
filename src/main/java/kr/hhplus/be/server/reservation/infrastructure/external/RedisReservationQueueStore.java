@@ -8,10 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -77,10 +75,17 @@ public class RedisReservationQueueStore implements ReservationQueueStore {
                 .map(UUID::fromString)
                 .toList();
 
-        // 상태 필터링: WAITING
-        return reservationTokenRepository.findAllById(tokenIds).stream()
-                .filter(token -> token.getStatus() == ReservationTokenStatus.WAITING)
-                .map(ReservationToken::getId)
-                .toList();
+        // DB에서 조회 시, 순서가 보장되지 않기 때문에 queue 순서 기준으로 순회
+        Map<UUID, ReservationToken> tokenMap =
+                reservationTokenRepository.findByIdInAndStatus(tokenIds, ReservationTokenStatus.WAITING)
+                        .stream()
+                        .collect(Collectors.toMap(ReservationToken::getId, token -> token));
+
+        List<UUID> waitingQueueTokenIds = new ArrayList<>();
+        for (UUID tokenId : tokenIds) {
+            if (tokenMap.containsKey(tokenId))
+                waitingQueueTokenIds.add(tokenId);
+        }
+        return waitingQueueTokenIds;
     }
 }

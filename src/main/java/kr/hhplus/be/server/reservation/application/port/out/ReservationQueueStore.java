@@ -6,7 +6,7 @@ import java.util.UUID;
 public interface ReservationQueueStore {
 
     /**
-     * 대기열에 사용자 추가 (TTL이 만료되지 않은 ALLOWED, WAITING 사용자는 추가 X)
+     * 대기열에 사용자 추가 (이미 존재하면 추가하지 않음)
      *
      * @param tokenId 대기열토큰 ID
      * @param currentTimeMillis 현재 시간 (순번 정렬용)
