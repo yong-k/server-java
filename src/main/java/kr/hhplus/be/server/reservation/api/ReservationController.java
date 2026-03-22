@@ -1,6 +1,7 @@
 package kr.hhplus.be.server.reservation.api;
 
 import kr.hhplus.be.server.reservation.application.port.in.ReservationUseCase;
+import kr.hhplus.be.server.reservation.application.service.facade.ReservationEntryFacade;
 import kr.hhplus.be.server.reservation.dto.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,14 +17,15 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ReservationController {
 
+    private final ReservationEntryFacade reservationEntryFacade;
     private final ReservationUseCase reservationUseCase;
 
-    // 대기열 토큰 발급
+    // 대기열 진입 요청 (토큰 발급 + 대기열 큐 진입 통합 처리)
     //--- X-USER-ID: 대기열토큰 발급 시, userId 필요. 아직 jwt 적용 전이라 header로 userId 값 보내서 테스트 진행중 (변경 예정)
-    @PostMapping("/reservation/token")
-    public ResponseEntity<ReservationTokenRespDto> issueToken(@RequestHeader("X-USER-ID") UUID userId) {
-        ReservationTokenRespDto token = reservationUseCase.issueToken(userId);
-        return ResponseEntity.status(HttpStatus.CREATED).body(token);
+    @PostMapping("/reservation/queue")
+    public ResponseEntity<QueueEnterRespDto> enterQueue(@RequestHeader("X-USER-ID") UUID userId) {
+        QueueEnterRespDto respDto = reservationEntryFacade.issueTokenAndEnterQueue(userId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(respDto);
     }
 
     // 좌석 예약

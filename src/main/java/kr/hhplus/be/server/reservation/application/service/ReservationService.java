@@ -8,6 +8,8 @@ import kr.hhplus.be.server.reservation.application.port.in.PayHistoryUseCase;
 import kr.hhplus.be.server.reservation.application.port.in.ReservationUseCase;
 import kr.hhplus.be.server.reservation.application.port.out.ReservationTokenRepository;
 import kr.hhplus.be.server.reservation.application.validator.ReservationTokenValidator;
+import kr.hhplus.be.server.reservation.config.ReservationQueueProperties;
+import kr.hhplus.be.server.reservation.config.ReservationTokenProperties;
 import kr.hhplus.be.server.reservation.config.SeatStatusProperties;
 import kr.hhplus.be.server.reservation.domain.*;
 import kr.hhplus.be.server.reservation.dto.*;
@@ -23,6 +25,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -37,6 +41,8 @@ public class ReservationService implements ReservationUseCase {
     private final PayHistoryUseCase payHistoryUseCase;
 
     private final ReservationTokenValidator reservationTokenValidator;
+    private final ReservationQueueProperties reservationQueueProperties;
+    private final ReservationTokenProperties reservationTokenProperties;
     private final SeatStatusProperties seatStatusProperties;
     private final RedisDistributedLockManager redisDistributedLockManager;
 
@@ -45,12 +51,35 @@ public class ReservationService implements ReservationUseCase {
 
     @Override
     public ReservationTokenRespDto issueToken(UUID userId) {
+        // 1. 기존 토큰 있는지 확인 (WAITING, ALLOWED 상태)
+        List<ReservationTokenStatus> reusableStatuses = List.of(ReservationTokenStatus.WAITING, ReservationTokenStatus.ALLOWED);
+        Optional<ReservationToken> existingToken = reservationTokenRepository.findByUserIdAndStatusIn(userId, reusableStatuses);
+
+        // 2. 있으면 재사용
+        if (existingToken.isPresent()) {
+            ReservationToken token = existingToken.get();
+            if (token.getStatus() == ReservationTokenStatus.WAITING ||
+               (token.getStatus() == ReservationTokenStatus.ALLOWED && !token.isExpired())) {
+                return ReservationTokenRespDto.from(token);
+            }
+        }
+
+        // 3. 없으면 새로 발급
+        int allowedLimit = reservationQueueProperties.getAllowedLimit();
+        long allowedCount = reservationTokenRepository.countByStatus(ReservationTokenStatus.ALLOWED);
+
+        // WAITING으로 토큰 발급
         ReservationToken token = ReservationToken.builder()
                 .id(UUID.randomUUID())
                 .userId(userId)
                 .status(ReservationTokenStatus.WAITING)
                 .build();
 
+        // 서버 여유 있으면, ALLOWED로 상태 변경
+        if (allowedCount < allowedLimit) {
+            long allowedToTimeoutMinutes = reservationTokenProperties.getAllowedToTimeoutMinutes();
+            token.allow(allowedToTimeoutMinutes);
+        }
         return ReservationTokenRespDto.from(reservationTokenRepository.save(token));
     }
 

@@ -14,6 +14,8 @@ public interface JpaReservationTokenRepository extends JpaRepository<Reservation
 
     List<ReservationToken> findByIdInAndStatus(List<UUID> tokenIds, ReservationTokenStatus status);
 
+    Optional<ReservationToken> findByUserIdAndStatusIn(UUID userId, List<ReservationTokenStatus> statuses);
+
     List<ReservationToken> findByStatusAndExpiredAtBefore(ReservationTokenStatus status, LocalDateTime expiredAt);
 
     long countByStatus(ReservationTokenStatus status);

@@ -16,7 +16,10 @@ public class ReservationTokenValidator {
     private final ReservationTokenRepository reservationTokenRepository;
 
     public void validateToken(UUID tokenId) {
-        ReservationToken token = reservationTokenRepository.findByIdAndStatus(tokenId, ReservationTokenStatus.ALLOWED)
+        ReservationToken token = reservationTokenRepository.findById(tokenId)
                 .orElseThrow(() -> new InvalidReservationTokenException("대기열토큰이 유효하지 않습니다: tokenId[" + tokenId + "]"));
+
+        if (token.getStatus() != ReservationTokenStatus.ALLOWED || token.isExpired())
+            throw new InvalidReservationTokenException("대기열토큰이 유효하지 않습니다: tokenId[" + tokenId + "], status=" + token.getStatus());
     }
 }

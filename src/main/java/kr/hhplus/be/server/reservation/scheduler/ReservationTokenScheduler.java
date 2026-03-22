@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -79,6 +80,7 @@ public class ReservationTokenScheduler {
                     tokens.stream().collect(Collectors.toMap(ReservationToken::getId, token -> token));
 
             long allowedBefore = allowedCount;
+            List<UUID> removalTokenIds = new ArrayList<>();
             for (UUID tokenId : queue) {
                 if (allowedCount >= allowedLimit) break;
 
@@ -87,7 +89,11 @@ public class ReservationTokenScheduler {
 
                 token.allow(reservationTokenProperties.getAllowedToTimeoutMinutes());   // Dirty Checking OK
                 allowedCount++;
+                removalTokenIds.add(tokenId);
             }
+
+            // ALLOWED로 바뀐 토큰을 대기열에서 제거
+            reservationQueueStore.removeFromQueue(removalTokenIds);
 
             log.info("ALLOW 처리 완료: {}건", allowedCount - allowedBefore);
 

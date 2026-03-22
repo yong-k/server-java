@@ -88,4 +88,21 @@ public class RedisReservationQueueStore implements ReservationQueueStore {
         }
         return waitingQueueTokenIds;
     }
+
+    /**
+     * 대기열에서 토큰 제거
+     *
+     * @param tokenIds 제거할 대기열토큰 ID 목록
+     */
+    @Override
+    public void removeFromQueue(List<UUID> tokenIds) {
+        if (tokenIds == null || tokenIds.isEmpty()) return;
+
+        String[] values = tokenIds.stream()
+                .map(UUID::toString)
+                .toArray(String[]::new);
+
+        redisTemplate.opsForZSet().remove(QUEUE_KEY, (Object[]) values);
+    }
+
 }

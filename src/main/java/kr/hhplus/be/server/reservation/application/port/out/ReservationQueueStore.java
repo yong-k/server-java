@@ -6,7 +6,7 @@ import java.util.UUID;
 public interface ReservationQueueStore {
 
     /**
-     * 대기열에 사용자 추가 (이미 존재하면 추가하지 않음)
+     * 대기열에 사용자 추가
      *
      * @param tokenId 대기열토큰 ID
      * @param currentTimeMillis 현재 시간 (순번 정렬용)
@@ -28,4 +28,11 @@ public interface ReservationQueueStore {
      * @return 대기 중인(WAITING 상태) tokenId 목록 (순번 오름차순 정렬)
      */
     List<UUID> getWaitingQueueTokenIds(int limit);
+
+    /**
+     * 대기열에서 토큰 제거
+     *
+     * @param tokenIds 제거할 대기열토큰 ID 목록
+     */
+    void removeFromQueue(List<UUID> tokenIds);
 }
