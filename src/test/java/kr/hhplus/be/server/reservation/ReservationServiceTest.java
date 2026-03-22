@@ -11,13 +11,12 @@ import kr.hhplus.be.server.reservation.application.port.in.PayHistoryUseCase;
 import kr.hhplus.be.server.reservation.application.port.out.ReservationTokenRepository;
 import kr.hhplus.be.server.reservation.application.service.ReservationService;
 import kr.hhplus.be.server.reservation.application.validator.ReservationTokenValidator;
+import kr.hhplus.be.server.reservation.config.ReservationQueueProperties;
+import kr.hhplus.be.server.reservation.config.ReservationTokenProperties;
 import kr.hhplus.be.server.reservation.config.SeatStatusProperties;
 import kr.hhplus.be.server.reservation.domain.ReservationToken;
 import kr.hhplus.be.server.reservation.domain.ReservationTokenStatus;
-import kr.hhplus.be.server.reservation.dto.PaymentReqDto;
-import kr.hhplus.be.server.reservation.dto.PaymentRespDto;
-import kr.hhplus.be.server.reservation.dto.SeatReservationReqDto;
-import kr.hhplus.be.server.reservation.dto.SeatReservationRespDto;
+import kr.hhplus.be.server.reservation.dto.*;
 import kr.hhplus.be.server.reservation.exception.InvalidSeatStatusException;
 import kr.hhplus.be.server.reservation.exception.InvalidSeatUserStatusException;
 import kr.hhplus.be.server.reservation.infrastructure.external.RedisDistributedLockManager;
@@ -47,6 +46,10 @@ class ReservationServiceTest {
     private PayHistoryUseCase payHistoryUseCase;
     @Mock
     private ReservationTokenValidator reservationTokenValidator;
+    @Mock
+    private ReservationQueueProperties reservationQueueProperties;
+    @Mock
+    private ReservationTokenProperties reservationTokenProperties;
     @Mock
     private SeatStatusProperties seatStatusProperties;
     @Mock
@@ -78,6 +81,37 @@ class ReservationServiceTest {
                 .userId(UUID.randomUUID())
                 .status(ReservationTokenStatus.ALLOWED)
                 .build());
+    }
+
+    @Test
+    void 토큰_발급_성공_WAITING() {
+        // given
+        when(reservationQueueProperties.getAllowedLimit()).thenReturn(1000);
+        when(reservationTokenRepository.countByStatus(ReservationTokenStatus.ALLOWED)).thenReturn(1000L);
+        when(reservationTokenRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // then
+        ReservationTokenRespDto result = reservationService.issueToken(userId);
+
+        // when
+        assertThat(result.getStatus()).isEqualTo(ReservationTokenStatus.WAITING);
+        assertThat(result.getExpiredAt()).isNull();
+    }
+
+    @Test
+    void 토큰_발급_성공_ALLOWED() {
+        // given
+        when(reservationQueueProperties.getAllowedLimit()).thenReturn(1000);
+        when(reservationTokenProperties.getAllowedToTimeoutMinutes()).thenReturn(10L);
+        when(reservationTokenRepository.countByStatus(ReservationTokenStatus.ALLOWED)).thenReturn(100L);
+        when(reservationTokenRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // when
+        ReservationTokenRespDto result = reservationService.issueToken(userId);
+
+        // then
+        assertThat(result.getStatus()).isEqualTo(ReservationTokenStatus.ALLOWED);
+        assertThat(result.getExpiredAt()).isNotNull();
     }
 
     @Test

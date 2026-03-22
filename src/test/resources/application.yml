@@ -7,3 +7,22 @@ spring:
     properties:
       hibernate.format_sql: true
       hibernate.physical_naming_strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+
+reservation:
+  seat-status:
+    scheduler-interval-ms: 60000
+    temp-reserved-to-expired-minutes: 5
+    expired-to-hold-minutes: 1
+    hold-to-available-minutes: 3
+  token:
+    scheduler-interval-ms: 60000
+    allowed-to-timeout-minutes: 10
+  ranking:
+    ttl-days:
+      daily: 1
+      weekly: 7
+      monthly: 31
+  queue:
+    allowed-limit: 1000
+    batch-allow-limit: 200
+    scheduler-interval-ms: 50000
