@@ -144,9 +144,12 @@ public class ReservationService implements ReservationUseCase {
         int seatId = dto.getSeatId();
         UUID userId = dto.getUserId();
 
+        // 대기열토큰 검증
+        reservationTokenValidator.validateToken(tokenId);
+
         String lockKey = "lock:seat:" + seatId;
         String lockValue = redisDistributedLockManager.generateUniqueValue();
-        Duration expire = Duration.ofSeconds(1);
+        Duration expire = Duration.ofSeconds(2);
 
         int maxAttempts = 3;
         int attempt = 0;
@@ -158,9 +161,6 @@ public class ReservationService implements ReservationUseCase {
                 try {
                     Seat seat = seatRepository.findByIdForUpdate(seatId)
                             .orElseThrow(() -> new DataNotFoundException("좌석이 존재하지 않습니다: seatId = " + seatId));
-
-                    // 대기열토큰 검증
-                    reservationTokenValidator.validateToken(tokenId);
 
                     // 좌석 결제 가능 여부 검증
                     // 예외 상황에서도 결제 실패 이력을 반드시 남기기 위한 REQUIRES_NEW 트랜잭션 분리 [payHistoryUseCase.savePayHistory()]

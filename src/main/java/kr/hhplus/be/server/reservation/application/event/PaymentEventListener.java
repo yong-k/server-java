@@ -14,6 +14,9 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.util.UUID;
 
+/**
+ * Kafka 도입 전 사용 코드 (현재 사용 X)
+ */
 @Component
 @RequiredArgsConstructor
 public class PaymentEventListener {
