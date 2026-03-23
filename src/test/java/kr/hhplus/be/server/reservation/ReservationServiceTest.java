@@ -1,5 +1,6 @@
 package kr.hhplus.be.server.reservation;
 
+import kr.hhplus.be.server.common.exception.DataNotFoundException;
 import kr.hhplus.be.server.concert.domain.Concert;
 import kr.hhplus.be.server.concert.domain.ConcertSchedule;
 import kr.hhplus.be.server.concert.domain.Seat;
@@ -76,11 +77,6 @@ class ReservationServiceTest {
 
         // ALLOWED 상태의 대기열토큰 생성 (테스트용)
         allowedTokenId = UUID.randomUUID();
-        reservationTokenRepository.save(ReservationToken.builder()
-                .id(allowedTokenId)
-                .userId(UUID.randomUUID())
-                .status(ReservationTokenStatus.ALLOWED)
-                .build());
     }
 
     @Test
@@ -137,6 +133,63 @@ class ReservationServiceTest {
         assertThat(actual.getSeatId()).isEqualTo(seatId);
         assertThat(actual.getUserId()).isEqualTo(userId);
         assertThat(actual.getStatus()).isEqualTo(SeatStatus.TEMP_RESERVED);
+
+        // 토큰검증 호출 확인
+        verify(reservationTokenValidator).validateToken(allowedTokenId);
+        // 락 해제 확인
+        verify(redisDistributedLockManager).unlock("lock:seat:1", "unique-value");
+    }
+
+    @Test
+    void 좌석_예약_성공_재시도후_락획득() {
+        // given
+        int seatId = 1;
+        Seat seat = Seat.builder()
+                .id(seatId)
+                .status(SeatStatus.AVAILABLE)
+                .concertSchedule(schedule)
+                .build();
+
+        when(redisDistributedLockManager.generateUniqueValue()).thenReturn("unique-value");
+        when(redisDistributedLockManager.lock(eq("lock:seat:1"), eq("unique-value"), any()))
+                .thenReturn(false)  // 1차 실패
+                .thenReturn(true);  // 2차 성공
+        when(seatRepository.findByIdForUpdate(seatId)).thenReturn(Optional.of(seat));
+
+        SeatReservationReqDto dto = new SeatReservationReqDto(seatId, userId);
+
+        // when
+        SeatReservationRespDto actual = reservationService.reserveSeat(allowedTokenId, dto);
+
+        // then
+        assertThat(actual.getSeatId()).isEqualTo(seatId);
+        assertThat(actual.getUserId()).isEqualTo(userId);
+        assertThat(actual.getStatus()).isEqualTo(SeatStatus.TEMP_RESERVED);
+
+        // 토큰검증 호출 확인
+        verify(reservationTokenValidator).validateToken(allowedTokenId);
+        // 락 해제 확인
+        verify(redisDistributedLockManager).unlock("lock:seat:1", "unique-value");
+    }
+
+    @Test
+    void 좌석_예약_실패_좌석없음() {
+        // given
+        int seatId = 1;
+
+        when(redisDistributedLockManager.generateUniqueValue()).thenReturn("unique-value");
+        when(redisDistributedLockManager.lock(eq("lock:seat:1"), eq("unique-value"), any()))
+                .thenReturn(true);
+        when(seatRepository.findByIdForUpdate(seatId)).thenReturn(Optional.empty());
+
+        SeatReservationReqDto dto = new SeatReservationReqDto(seatId, userId);
+
+        // when
+        // then
+        assertThatThrownBy(() -> reservationService.reserveSeat(allowedTokenId, dto))
+                .isInstanceOf(DataNotFoundException.class);
+
+        verify(redisDistributedLockManager).unlock("lock:seat:1", "unique-value");
     }
 
     @Test

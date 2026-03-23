@@ -76,8 +76,9 @@ public class ReservationIntegrationTest extends BaseIntegrationTest {
         allowedTokenId = UUID.randomUUID();
         reservationTokenRepository.save(ReservationToken.builder()
                 .id(allowedTokenId)
-                .userId(UUID.randomUUID())
+                .userId(userId)
                 .status(ReservationTokenStatus.ALLOWED)
+                .expiredAt(LocalDateTime.now().plusMinutes(10))
                 .build());
     }
 

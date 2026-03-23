@@ -28,6 +28,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -85,7 +86,7 @@ public class ReservationConcurrencyTest extends BaseIntegrationTest {
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);
         CountDownLatch latch = new CountDownLatch(threadCount);
 
-        List<SeatReservationRespDto> successList = new ArrayList<>();
+        List<SeatReservationRespDto> successList = Collections.synchronizedList(new ArrayList<>());
 
         doNothing().when(tokenValidator).validateToken(any());
 
@@ -97,6 +98,7 @@ public class ReservationConcurrencyTest extends BaseIntegrationTest {
                     SeatReservationRespDto respDto = reservationService.reserveSeat(allowedTokenId, reqDto);
                     successList.add(respDto);
                 } catch (Exception e) {
+                    log.debug("예약 실패: {}", e.getMessage());
                 } finally {
                     latch.countDown();
                 }
@@ -109,6 +111,10 @@ public class ReservationConcurrencyTest extends BaseIntegrationTest {
         // 동시에 같은 좌석 예약안되면 성공개수는 1이여야 함.
         assertThat(successList.size()).isEqualTo(1);
         log.info("성공 개수: {}", successList.size());
+
+        Seat updatedSeat = seatRepository.findById(seat.getId()).orElseThrow();
+        assertThat(updatedSeat.getStatus()).isEqualTo(SeatStatus.TEMP_RESERVED);
+        assertThat(updatedSeat.getUserId()).isNotNull();
     }
 
     @Test
@@ -117,7 +123,7 @@ public class ReservationConcurrencyTest extends BaseIntegrationTest {
         ExecutorService executor = Executors.newFixedThreadPool(threadCount);
         CountDownLatch latch = new CountDownLatch(threadCount);
 
-        List<PaymentRespDto> successList = new ArrayList<>();
+        List<PaymentRespDto> successList = Collections.synchronizedList(new ArrayList<>());
 
         doNothing().when(tokenValidator).validateToken(any());
 
@@ -136,7 +142,7 @@ public class ReservationConcurrencyTest extends BaseIntegrationTest {
                     PaymentRespDto respDto = reservationService.pay(allowedTokenId, reqDto);
                     successList.add(respDto);
                 } catch (Exception e) {
-                    log.debug("결제 실패: {}", e.getMessage());
+                    log.error("결제 실패", e);
                 } finally {
                     latch.countDown();
                 }
@@ -149,5 +155,8 @@ public class ReservationConcurrencyTest extends BaseIntegrationTest {
         // 동시에 같은 좌석 결제안되면 성공개수는 1이여야 함.
         assertThat(successList.size()).isEqualTo(1);
         log.info("성공 개수: {}", successList.size());
+
+        Seat updatedSeat = seatRepository.findById(seat.getId()).orElseThrow();
+        assertThat(updatedSeat.getStatus()).isEqualTo(SeatStatus.RESERVED);
     }
 }

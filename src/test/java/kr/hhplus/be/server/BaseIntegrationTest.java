@@ -7,6 +7,8 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.kafka.KafkaContainer;
+import org.testcontainers.utility.DockerImageName;
 
 @Testcontainers
 @SpringBootTest
@@ -22,6 +24,11 @@ public abstract class BaseIntegrationTest {
     static GenericContainer<?> redis = new GenericContainer<>("redis:7.2")
             .withExposedPorts(6379);
 
+    @Container
+    static KafkaContainer kafka = new KafkaContainer(
+            DockerImageName.parse("apache/kafka:3.7.0")
+    );
+
     @DynamicPropertySource
     static void configure(DynamicPropertyRegistry registry) {
         // mysql
@@ -33,5 +40,8 @@ public abstract class BaseIntegrationTest {
         // redis
         registry.add("spring.data.redis.host", redis::getHost);
         registry.add("spring.data.redis.port", () -> redis.getMappedPort(6379));
+
+        // kafka
+        registry.add("spring.kafka.bootstrap-servers", kafka::getBootstrapServers);
     }
 }

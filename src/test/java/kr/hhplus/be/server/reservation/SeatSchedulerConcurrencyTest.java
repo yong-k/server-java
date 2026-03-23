@@ -125,7 +125,7 @@ public class SeatSchedulerConcurrencyTest extends BaseIntegrationTest {
             assertThat(finalSeat.getReleasedAt()).isNull();
         } else {
             // 스케줄러 먼저 처리
-            assertThat(finalSeat.getStatus()).isIn(SeatStatus.EXPIRED, SeatStatus.HOLD, SeatStatus.AVAILABLE);
+            assertThat(finalSeat.getStatus()).isEqualTo(SeatStatus.EXPIRED);
         }
     }
 }
