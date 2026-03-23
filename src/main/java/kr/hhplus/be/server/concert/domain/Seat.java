@@ -11,7 +11,6 @@ import java.util.UUID;
 
 @Entity
 @Getter
-@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -70,7 +69,7 @@ public class Seat {
 
     public void validateReservable() {
         if (!this.status.equals(SeatStatus.AVAILABLE))
-            throw new InvalidSeatStatusException("예약불가 좌석입니다: [seatId = " + this.id + ", status = + " + this.status + "]");
+            throw new InvalidSeatStatusException("예약불가 좌석입니다: [seatId = " + this.id + ", status = " + this.status + "]");
     }
 
     public void validatePayable(UUID userId) {
@@ -78,9 +77,9 @@ public class Seat {
             throw new InvalidSeatStatusException("결제불가 좌석입니다: [seatId = " + this.id + ", status = " + this.status + "]");
         }
 
-        if (!this.userId.equals(userId)) {
+        if (this.userId == null || !this.userId.equals(userId)) {
             throw new InvalidSeatUserStatusException("(결제불가)해당 사용자에게 배정된 좌석이 아닙니다: "
-                    + "[seatId = " + this.id + ", 배정된userId = + " + this.userId + ", 현재userId = " + userId + "]");
+                    + "[seatId = " + this.id + ", 배정된userId = " + this.userId + ", 현재userId = " + userId + "]");
         }
     }
 }

@@ -89,9 +89,12 @@ public class ReservationService implements ReservationUseCase {
         int seatId = dto.getSeatId();
         UUID userId = dto.getUserId();
 
+        // 대기열토큰 검증
+        reservationTokenValidator.validateToken(tokenId);
+
         String lockKey = "lock:seat:" + seatId;
         String lockValue = redisDistributedLockManager.generateUniqueValue();
-        Duration expire = Duration.ofMillis(800);    // 락의 만료 시간(TTL)
+        Duration expire = Duration.ofSeconds(2);    // 락의 만료 시간(TTL)
 
         int maxAttempts = 3;
         int attempt = 0;
@@ -101,12 +104,9 @@ public class ReservationService implements ReservationUseCase {
             if (locked) {
                 long start = System.currentTimeMillis();
                 try {
-                    // JVM 락은 사용하지않고 DB락만 사용하여 예약 가능 여부 확인 → 상태 변경 → 저장까지 원자적으로 실행
+                    // Redis 분산락과 DB락을 통해 좌석 조회 및 상태 변경 구간의 정합성을 보장
                     Seat seat = seatRepository.findByIdForUpdate(seatId)
                             .orElseThrow(() -> new DataNotFoundException("좌석이 존재하지 않습니다: seatId = " + seatId));
-
-                    // 대기열토큰 검증
-                    reservationTokenValidator.validateToken(tokenId);
 
                     seat.validateReservable();
 
